@@ -19,3 +19,39 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@layer components {
+  .bg-background {
+    background-color: #0a0a0f;
+  }
+
+  .bg-card {
+    background-color: #111118;
+  }
+
+  .bg-secondary {
+    background-color: #18181b;
+  }
+
+  .text-card-foreground {
+    color: #fafafa;
+  }
+
+  .text-muted-foreground {
+    color: #71717a;
+  }
+
+  .border-border {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .gradient-primary {
+    @apply bg-gradient-to-r from-indigo-500 to-violet-600;
+  }
+
+  .glass-card {
+    @apply rounded-xl backdrop-blur-md;
+    background-color: #111118;
+    border: 1px solid rgba(99, 102, 241, 0.15);
+  }
+}
