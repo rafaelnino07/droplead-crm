@@ -113,6 +113,9 @@ export interface Product {
     is_favorite: boolean
     is_active: boolean
     sort_order: number
+    times_used: number
+    last_used_at: string | null
+    is_archived: boolean
     created_at: string
     updated_at: string
 }
@@ -392,7 +395,11 @@ export type Database = {
             }
             products: {
                 Row: WithIndex<Product>
-                Insert: Omit<Product, 'id' | 'created_at' | 'updated_at'>
+                Insert: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'times_used' | 'last_used_at' | 'is_archived'> & {
+                    times_used?: number
+                    last_used_at?: string | null
+                    is_archived?: boolean
+                }
                 Update: Partial<Omit<Product, 'id' | 'organization_id' | 'created_at'>>
                 Relationships: []
             }

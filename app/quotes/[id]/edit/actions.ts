@@ -6,7 +6,7 @@ import { getSupabaseServer } from '@/lib/supabase/server'
 
 type SupabaseServerClient = Awaited<ReturnType<typeof getSupabaseServer>>
 
-async function recalculateQuoteTotals(
+export async function recalculateQuoteTotals(
     supabase: SupabaseServerClient,
     quoteId: string,
     organizationId: string

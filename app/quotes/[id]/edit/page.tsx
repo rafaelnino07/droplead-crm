@@ -2,7 +2,9 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSupabaseServer } from '@/lib/supabase/server'
 import { FinancialPreview } from '../../../components/quotes/financial-preview'
+import { SaveAsProductForm } from '../../../components/quotes/save-as-product-form'
 import { updateQuoteMeta, upsertQuoteItem, deleteQuoteItem } from './actions'
+import { getFrequentProducts, addProductToQuote } from '@/lib/products/actions'
 
 export default async function EditQuotePage({
     params,
@@ -49,6 +51,8 @@ export default async function EditQuotePage({
     if (itemsError) console.error('QUOTE ITEMS ERROR:', itemsError)
 
     const quoteItems = itemsData ?? []
+
+    const frequentProducts = await getFrequentProducts(profile.organization_id)
 
     const isNewQuote = !quote.project_name
 
@@ -160,6 +164,43 @@ export default async function EditQuotePage({
             <section className="mt-6 max-w-2xl rounded-xl border border-neutral-800 bg-neutral-900 p-6">
                 <h2 className="text-xl font-bold">Partidas</h2>
 
+                {frequentProducts.length > 0 && (
+                    <div className="mt-4">
+                        <h3 className="mb-3 text-xs uppercase tracking-wider text-neutral-500">
+                            ✨ Frecuentemente cotizados
+                        </h3>
+
+                        <div className="flex gap-3 overflow-x-auto pb-2">
+                            {frequentProducts.map((product) => (
+                                <div
+                                    key={product.id}
+                                    className="min-w-[200px] cursor-pointer rounded-xl border border-neutral-700 bg-neutral-800 p-4"
+                                >
+                                    <p className="text-sm font-semibold">{product.name}</p>
+
+                                    {product.category && (
+                                        <p className="text-xs text-neutral-500">{product.category}</p>
+                                    )}
+
+                                    <p className="text-sm text-neutral-300">
+                                        ${Number(product.unit_price).toLocaleString('es-MX')}
+                                    </p>
+
+                                    <p className="text-xs text-neutral-600">Usado {product.times_used} veces</p>
+
+                                    <form action={addProductToQuote} className="mt-2">
+                                        <input type="hidden" name="product_id" value={product.id} />
+                                        <input type="hidden" name="quote_id" value={quote.id} />
+                                        <button className="rounded-lg bg-neutral-700 px-3 py-1 text-xs hover:bg-neutral-600">
+                                            Agregar
+                                        </button>
+                                    </form>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {quoteItems.length === 0 ? (
                     <p className="mt-4 text-neutral-400">
                         Esta cotización no tiene partidas registradas.
@@ -182,13 +223,23 @@ export default async function EditQuotePage({
                                     ${Number(item.subtotal).toLocaleString('es-MX')}
                                 </p>
 
-                                <form action={deleteQuoteItem}>
-                                    <input type="hidden" name="id" value={item.id} />
-                                    <input type="hidden" name="quote_id" value={quote.id} />
-                                    <button className="rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500">
-                                        Eliminar
-                                    </button>
-                                </form>
+                                <div className="flex items-center gap-2">
+                                    <SaveAsProductForm
+                                        itemId={item.id}
+                                        name={item.name}
+                                        description={item.description}
+                                        unit={item.unit}
+                                        unitPrice={Number(item.unit_price)}
+                                    />
+
+                                    <form action={deleteQuoteItem}>
+                                        <input type="hidden" name="id" value={item.id} />
+                                        <input type="hidden" name="quote_id" value={quote.id} />
+                                        <button className="rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500">
+                                            Eliminar
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         ))}
                     </div>
