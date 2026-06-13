@@ -10,6 +10,7 @@ import type {
     MetaAd,
     MetaAdMetric,
 } from '@/types/marketing-intelligence'
+import type { FileCategory } from '@/lib/files/categories'
 
 // ── Shared ──────────────────────────────────────────────────────
 
@@ -64,6 +65,7 @@ export interface Organization {
 
 export interface Profile {
     id: string
+    user_id: string
     organization_id: string
     full_name: string
     email: string
@@ -196,6 +198,68 @@ export interface QuoteEvent {
     created_at: string
 }
 
+// ── Client Activity ──────────────────────────────────────────────
+// Timeline Comercial — eventos del cliente (inmutable)
+
+export interface ClientActivity {
+    id: string
+    organization_id: string
+    client_id: string
+    created_by: string | null
+    type: string
+    title: string
+    description: string | null
+    metadata: Record<string, unknown>
+    created_at: string
+}
+
+// ── Commercial Memory ────────────────────────────────────────────
+// Memoria Comercial — clients 1:1 commercial_memory
+
+export interface CommercialMemory {
+    id: string
+    organization_id: string
+    client_id: string
+
+    // Perfil
+    estimated_budget: number | null
+    urgency: string | null
+    closing_probability: number | null
+    temperature: string | null
+    project_type: string | null
+    lead_source: string | null
+
+    // Conocimiento
+    executive_summary: string | null
+    pain_points: string | null
+    desires: string | null
+    objections: string | null
+    competitors: string | null
+
+    // Acción
+    next_step: string | null
+    next_step_date: string | null
+
+    created_at: string
+    updated_at: string
+}
+
+// ── Client File ──────────────────────────────────────────────────
+// Expediente visual — metadata de archivos en Supabase Storage
+
+export interface ClientFile {
+    id: string
+    organization_id: string
+    client_id: string
+    uploaded_by: string | null
+    file_name: string
+    file_path: string
+    file_type: string | null
+    file_size: number
+    category: FileCategory | null
+    created_at: string
+}
+
 // ═══════════════════════════════════════════════════════════════
 // JOINED / ENRICHED TYPES
 // Used in queries that join multiple tables
@@ -291,69 +355,122 @@ export type DateRange = '7d' | '30d' | '90d' | 'ytd' | 'all'
 // SUPABASE DATABASE TYPE (for typed client)
 // ═══════════════════════════════════════════════════════════════
 
+// postgrest-js GenericTable requires Row to satisfy Record<string, unknown>;
+// plain interfaces have no index signature, so intersect to satisfy it.
+type WithIndex<T> = T & Record<string, unknown>
+
 export type Database = {
     public: {
         Tables: {
             organizations: {
-                Row: Organization
+                Row: WithIndex<Organization>
                 Insert: Omit<Organization, 'id' | 'created_at' | 'updated_at'>
                 Update: Partial<Omit<Organization, 'id' | 'created_at'>>
+                Relationships: []
             }
             profiles: {
-                Row: Profile
+                Row: WithIndex<Profile>
                 Insert: Omit<Profile, 'created_at' | 'updated_at'>
                 Update: Partial<Omit<Profile, 'id' | 'created_at'>>
+                Relationships: [
+                    {
+                        foreignKeyName: 'profiles_organization_id_fkey'
+                        columns: ['organization_id']
+                        isOneToOne: true
+                        referencedRelation: 'organizations'
+                        referencedColumns: ['id']
+                    }
+                ]
             }
             clients: {
-                Row: Client
+                Row: WithIndex<Client>
                 Insert: Omit<Client, 'id' | 'created_at' | 'updated_at'>
                 Update: Partial<Omit<Client, 'id' | 'organization_id' | 'created_at'>>
+                Relationships: []
             }
             products: {
-                Row: Product
+                Row: WithIndex<Product>
                 Insert: Omit<Product, 'id' | 'created_at' | 'updated_at'>
                 Update: Partial<Omit<Product, 'id' | 'organization_id' | 'created_at'>>
+                Relationships: []
             }
             quotes: {
-                Row: Quote
+                Row: WithIndex<Quote>
                 Insert: Omit<Quote, 'id' | 'quote_number' | 'share_token' | 'view_count' | 'created_at' | 'updated_at'>
                 Update: Partial<Omit<Quote, 'id' | 'organization_id' | 'created_at'>>
+                Relationships: [
+                    {
+                        foreignKeyName: 'quotes_client_id_fkey'
+                        columns: ['client_id']
+                        isOneToOne: true
+                        referencedRelation: 'clients'
+                        referencedColumns: ['id']
+                    }
+                ]
             }
             quote_items: {
-                Row: QuoteItem
+                Row: WithIndex<QuoteItem>
                 Insert: Omit<QuoteItem, 'id' | 'created_at'>
                 Update: Partial<Omit<QuoteItem, 'id' | 'quote_id' | 'created_at'>>
+                Relationships: []
             }
             quote_events: {
-                Row: QuoteEvent
+                Row: WithIndex<QuoteEvent>
                 Insert: Omit<QuoteEvent, 'id' | 'created_at'>
                 Update: never  // events are immutable
+                Relationships: []
+            }
+            client_activities: {
+                Row: WithIndex<ClientActivity>
+                Insert: Omit<ClientActivity, 'id' | 'created_at'>
+                Update: never  // activities are immutable
+                Relationships: []
+            }
+            commercial_memory: {
+                Row: WithIndex<CommercialMemory>
+                Insert: Omit<CommercialMemory, 'id' | 'created_at' | 'updated_at'>
+                Update: Partial<Omit<CommercialMemory, 'id' | 'organization_id' | 'client_id' | 'created_at'>>
+                Relationships: []
+            }
+            client_files: {
+                Row: WithIndex<ClientFile>
+                Insert: Omit<ClientFile, 'id' | 'created_at'>
+                Update: Partial<Omit<ClientFile, 'id' | 'organization_id' | 'client_id' | 'created_at'>>
+                Relationships: []
             }
             meta_ad_accounts: {
-                Row: MetaAdAccount
+                Row: WithIndex<MetaAdAccount>
                 Insert: Omit<MetaAdAccount, 'id' | 'created_at'>
                 Update: Partial<Omit<MetaAdAccount, 'id' | 'organization_id' | 'created_at'>>
+                Relationships: []
             }
             meta_campaigns: {
-                Row: MetaCampaign
+                Row: WithIndex<MetaCampaign>
                 Insert: Omit<MetaCampaign, 'id' | 'created_at'>
                 Update: Partial<Omit<MetaCampaign, 'id' | 'organization_id' | 'created_at'>>
+                Relationships: []
             }
             meta_ad_sets: {
-                Row: MetaAdSet
+                Row: WithIndex<MetaAdSet>
                 Insert: Omit<MetaAdSet, 'id' | 'created_at'>
                 Update: Partial<Omit<MetaAdSet, 'id' | 'organization_id' | 'created_at'>>
+                Relationships: []
             }
             meta_ads: {
-                Row: MetaAd
+                Row: WithIndex<MetaAd>
                 Insert: Omit<MetaAd, 'id' | 'created_at'>
                 Update: Partial<Omit<MetaAd, 'id' | 'organization_id' | 'created_at'>>
+                Relationships: []
             }
             meta_ad_metrics: {
-                Row: MetaAdMetric
+                Row: WithIndex<MetaAdMetric>
                 Insert: Omit<MetaAdMetric, 'id' | 'created_at'>
                 Update: Partial<Omit<MetaAdMetric, 'id' | 'organization_id' | 'created_at'>>
+                Relationships: []
             }
+        }
+        Views: {
+            [_ in never]: never
         }
         Functions: {
             get_my_org_id: { Args: Record<never, never>; Returns: string }
