@@ -32,7 +32,7 @@ const sections: NavSection[] = [
 export function Sidebar() {
   const pathname = usePathname();
 
-  if (HIDDEN_ROUTES.includes(pathname)) {
+  if (HIDDEN_ROUTES.includes(pathname) || pathname.startsWith("/q/")) {
     return null;
   }
 
