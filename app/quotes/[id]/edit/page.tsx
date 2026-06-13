@@ -50,13 +50,25 @@ export default async function EditQuotePage({
 
     const quoteItems = itemsData ?? []
 
+    const isNewQuote = !quote.project_name
+
     return (
         <main className="min-h-screen bg-neutral-950 p-8 text-white">
-            <Link href={`/quotes/${quote.id}`} className="text-sm text-neutral-400">
-                ← Volver a cotización
-            </Link>
+            <div className="flex items-center gap-4">
+                {quote.client_id && (
+                    <Link href={`/clients/${quote.client_id}`} className="text-sm text-neutral-400">
+                        ← Volver al cliente
+                    </Link>
+                )}
 
-            <h1 className="mt-4 text-3xl font-bold">Editar cotización</h1>
+                {!isNewQuote && (
+                    <Link href={`/quotes/${quote.id}`} className="text-sm text-neutral-400">
+                        ← Volver a cotización
+                    </Link>
+                )}
+            </div>
+
+            <h1 className="mt-4 text-3xl font-bold">{isNewQuote ? 'Nueva cotización' : 'Editar cotización'}</h1>
             <p className="mt-1 text-neutral-400">{quote.quote_number}</p>
 
             {/* SECTION 1 — metadata */}
@@ -70,7 +82,6 @@ export default async function EditQuotePage({
                     name="project_name"
                     defaultValue={quote.project_name ?? ''}
                     placeholder="Nombre del proyecto"
-                    required
                     className="w-full rounded bg-neutral-800 px-4 py-3 outline-none"
                 />
 
@@ -141,7 +152,7 @@ export default async function EditQuotePage({
                 </div>
 
                 <button className="rounded bg-white px-4 py-3 font-semibold text-black">
-                    Guardar cambios
+                    {isNewQuote ? 'Guardar cotización' : 'Guardar cambios'}
                 </button>
             </form>
 

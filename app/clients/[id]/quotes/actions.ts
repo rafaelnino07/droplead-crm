@@ -10,20 +10,8 @@ function generateQuoteNumber() {
     return `Q-${timestamp}`
 }
 
-export async function createQuote(
-    clientId: string,
-    formData: FormData
-) {
+export async function createQuote(clientId: string) {
     const supabase = await getSupabaseServer()
-
-    const projectName = String(formData.get('project_name')).trim()
-    const projectType = String(formData.get('project_type')).trim()
-    const projectAddress = String(formData.get('project_address')).trim()
-    const clientVision = String(formData.get('client_vision')).trim()
-    const notes = String(formData.get('notes')).trim()
-    const validUntil = String(formData.get('valid_until') ?? '').trim()
-    const taxRate = Number(formData.get('tax_rate') || 0)
-    const discountGlobal = Number(formData.get('discount_global') || 0)
 
     const {
         data: { user },
@@ -54,31 +42,35 @@ export async function createQuote(
         redirect('/clients')
     }
 
+    const { data: quoteNumber } = await supabase.rpc('generate_quote_number', {
+        org_id: profile.organization_id,
+    })
+
     const { data: quote, error } = await supabase
         .from('quotes')
         .insert({
             organization_id: profile.organization_id,
             client_id: clientId,
             created_by: user.id,
-            quote_number: generateQuoteNumber(),
+            quote_number: quoteNumber ?? generateQuoteNumber(),
             version: 1,
             status: 'draft',
-            project_name: projectName,
-            project_type: projectType || null,
-            project_address: projectAddress || null,
-            client_vision: clientVision || null,
+            project_name: '',
+            project_type: null,
+            project_address: null,
+            client_vision: null,
             subtotal: 0,
-            discount_global: discountGlobal,
+            discount_global: 0,
             discount_amount: 0,
             taxable_amount: 0,
-            tax_rate: taxRate,
+            tax_rate: 0,
             tax_amount: 0,
             total: 0,
             template: 'modern',
             executive_name: profile.full_name,
             executive_email: profile.email,
-            notes: notes || null,
-            valid_until: validUntil || null,
+            notes: null,
+            valid_until: null,
             view_count: 0,
         })
         .select('id, quote_number')
@@ -86,10 +78,7 @@ export async function createQuote(
 
     if (error) {
         console.error('CREATE QUOTE ERROR:', error)
-
-        redirect(
-            `/clients/${clientId}/quotes/new?error=${encodeURIComponent(error.message)}`
-        )
+        redirect(`/clients/${clientId}?error=${encodeURIComponent(error.message)}`)
     }
 
     const { error: activityError } = await supabase
