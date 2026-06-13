@@ -20,8 +20,10 @@ export async function createQuote(
     const projectType = String(formData.get('project_type')).trim()
     const projectAddress = String(formData.get('project_address')).trim()
     const clientVision = String(formData.get('client_vision')).trim()
-    const total = Number(formData.get('total') || 0)
     const notes = String(formData.get('notes')).trim()
+    const validUntil = String(formData.get('valid_until') ?? '').trim()
+    const taxRate = Number(formData.get('tax_rate') || 0)
+    const discountGlobal = Number(formData.get('discount_global') || 0)
 
     const {
         data: { user },
@@ -65,17 +67,18 @@ export async function createQuote(
             project_type: projectType || null,
             project_address: projectAddress || null,
             client_vision: clientVision || null,
-            subtotal: total,
-            discount_global: 0,
+            subtotal: 0,
+            discount_global: discountGlobal,
             discount_amount: 0,
-            taxable_amount: total,
-            tax_rate: 0,
+            taxable_amount: 0,
+            tax_rate: taxRate,
             tax_amount: 0,
-            total,
+            total: 0,
             template: 'modern',
             executive_name: profile.full_name,
             executive_email: profile.email,
             notes: notes || null,
+            valid_until: validUntil || null,
             view_count: 0,
         })
         .select('id, quote_number')
@@ -97,11 +100,10 @@ export async function createQuote(
             created_by: user.id,
             type: 'proposal_created',
             title: 'Cotización creada',
-            description: `Se creó la cotización ${quote.quote_number} por $${Number(total).toLocaleString('es-MX')}.`,
+            description: `Se creó la cotización ${quote.quote_number}.`,
             metadata: {
                 quote_id: quote.id,
                 quote_number: quote.quote_number,
-                total,
             },
         })
 
@@ -109,5 +111,5 @@ export async function createQuote(
         console.error('QUOTE ACTIVITY ERROR:', activityError)
     }
 
-    redirect(`/clients/${clientId}`)
+    redirect(`/quotes/${quote.id}/edit`)
 }

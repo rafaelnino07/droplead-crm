@@ -38,7 +38,9 @@ export async function middleware(request: NextRequest) {
         request.nextUrl.pathname.startsWith('/quotes') ||
         request.nextUrl.pathname.startsWith('/onboarding')
 
-    if (!user && isProtectedPage) {
+    const isPrintPage = request.nextUrl.pathname.match(/^\/quotes\/[^/]+\/print$/)
+
+    if (!user && isProtectedPage && !isPrintPage) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)

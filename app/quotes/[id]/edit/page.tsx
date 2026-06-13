@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSupabaseServer } from '@/lib/supabase/server'
+import { FinancialPreview } from '../../../components/quotes/financial-preview'
 import { updateQuoteMeta, upsertQuoteItem, deleteQuoteItem } from './actions'
 
 export default async function EditQuotePage({
@@ -289,6 +290,12 @@ export default async function EditQuotePage({
                     </div>
                 </div>
             </section>
+
+            <FinancialPreview
+                initialSubtotal={quote.subtotal}
+                initialTaxRate={quote.tax_rate}
+                initialDiscountGlobal={quote.discount_global}
+            />
         </main>
     )
 }

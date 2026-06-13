@@ -24,20 +24,6 @@ export default async function PrintQuotePage({
 
     const admin = getSupabaseAdmin()
 
-    let organizationId: string | null = null
-
-    if (user) {
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('organization_id')
-            .eq('user_id', user.id)
-            .maybeSingle()
-
-        if (!profile) redirect('/onboarding')
-
-        organizationId = profile.organization_id
-    }
-
     const quoteSelect = `
       *,
       clients (
@@ -50,24 +36,47 @@ export default async function PrintQuotePage({
       )
     `
 
-    const { data: quote, error } = organizationId
-        ? await admin
-            .from('quotes')
-            .select(quoteSelect)
-            .eq('id', params.id)
-            .eq('organization_id', organizationId)
-            .maybeSingle()
-        : await admin
-            .from('quotes')
-            .select(quoteSelect)
-            .eq('id', params.id)
-            .maybeSingle()
+    const { data: quote, error } = await admin
+        .from('quotes')
+        .select(quoteSelect)
+        .eq('id', params.id)
+        .maybeSingle()
 
     if (error) console.error('PRINT QUOTE ERROR:', error)
 
-    if (!quote) notFound()
+    console.log('QUOTE FOUND:', quote?.id, 'QUOTE ORG:', quote?.organization_id)
 
-    if (!organizationId && !quote.share_token) {
+    if (!quote) {
+        console.error('PRINT QUOTE NOT FOUND:', { id: params.id, error })
+        notFound()
+    }
+
+    let organizationId: string | null = null
+
+    if (user) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('organization_id')
+            .eq('user_id', user.id)
+            .maybeSingle()
+
+        if (!profile) redirect('/onboarding')
+
+        organizationId = profile.organization_id
+
+        console.log('USER ORG:', profile.organization_id)
+    }
+
+    if (organizationId && quote.organization_id !== organizationId) {
+        console.error('PRINT QUOTE ORG MISMATCH:', {
+            id: params.id,
+            quoteOrg: quote.organization_id,
+            userOrg: organizationId,
+        })
+        notFound()
+    }
+
+    if (!user && !quote.share_token) {
         redirect('/login')
     }
 

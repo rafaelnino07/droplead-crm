@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { FinancialPreview } from '../../../../components/quotes/financial-preview'
 import { createQuote } from '../actions'
 
 export default function NewQuotePage({
@@ -53,26 +54,68 @@ export default function NewQuotePage({
                     className="min-h-28 w-full rounded bg-neutral-800 px-4 py-3 outline-none"
                 />
 
-                <input
-                    name="total"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="Total estimado"
-                    required
-                    className="w-full rounded bg-neutral-800 px-4 py-3 outline-none"
-                />
-
                 <textarea
                     name="notes"
                     placeholder="Notas internas"
                     className="min-h-28 w-full rounded bg-neutral-800 px-4 py-3 outline-none"
                 />
 
+                <div className="grid gap-4 sm:grid-cols-3">
+                    <div>
+                        <label className="mb-1 block text-xs text-neutral-500">Válida hasta</label>
+                        <input
+                            type="date"
+                            name="valid_until"
+                            className="w-full rounded bg-neutral-800 px-4 py-3 outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-xs text-neutral-500">IVA (%)</label>
+                        <input
+                            type="number"
+                            name="tax_rate"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            defaultValue={0}
+                            className="w-full rounded bg-neutral-800 px-4 py-3 outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-xs text-neutral-500">Descuento global (%)</label>
+                        <input
+                            type="number"
+                            name="discount_global"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            defaultValue={0}
+                            className="w-full rounded bg-neutral-800 px-4 py-3 outline-none"
+                        />
+                    </div>
+                </div>
+
+                <div className="rounded-xl border border-dashed border-neutral-700 px-4">
+                    <p className="py-6 text-center text-sm text-neutral-500">
+                        📦 Las partidas se agregan en el siguiente paso
+                    </p>
+                    <p className="-mt-4 pb-6 text-center text-xs text-neutral-600">
+                        Después de crear la cotización podrás agregar conceptos, precios y descuentos por partida
+                    </p>
+                </div>
+
                 <button className="rounded bg-white px-4 py-3 font-semibold text-black">
-                    Guardar cotización
+                    Crear cotización y agregar partidas →
                 </button>
             </form>
+
+            <FinancialPreview
+                initialSubtotal={0}
+                initialTaxRate={0}
+                initialDiscountGlobal={0}
+            />
         </main>
     )
 }

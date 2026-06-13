@@ -131,8 +131,19 @@ export default async function ClientDetailPage({
             </Link>
 
             <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-8">
-                <p className="text-neutral-500">Cliente</p>
-                <h1 className="mt-2 text-5xl font-bold">{client.name}</h1>
+                <div className="flex items-start justify-between">
+                    <div>
+                        <p className="text-neutral-500">Cliente</p>
+                        <h1 className="mt-2 text-5xl font-bold">{client.name}</h1>
+                    </div>
+
+                    <Link
+                        href={`/clients/${client.id}/quotes/new`}
+                        className="rounded-lg bg-white px-5 py-3 font-semibold text-black"
+                    >
+                        Nueva cotización
+                    </Link>
+                </div>
 
                 <div className="mt-10 grid grid-cols-2 gap-10">
                     <div>
