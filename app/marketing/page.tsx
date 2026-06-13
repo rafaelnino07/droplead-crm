@@ -16,6 +16,8 @@ const STATUS_LABELS: Record<string, { label: string; classes: string }> = {
   PAUSED: { label: "Pausada", classes: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
   ARCHIVED: { label: "Archivada", classes: "bg-muted-foreground/10 text-muted-foreground border-border" },
   DELETED: { label: "Eliminada", classes: "bg-muted-foreground/10 text-muted-foreground border-border" },
+  IN_PROCESS: { label: "En proceso", classes: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
+  WITH_ISSUES: { label: "Con problemas", classes: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
 };
 
 function StatusBadge({ s }: { s: string | null }) {

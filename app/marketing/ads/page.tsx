@@ -24,6 +24,8 @@ const STATUS_LABELS: Record<string, string> = {
   PAUSED: "Pausado",
   ARCHIVED: "Archivado",
   DELETED: "Eliminado",
+  IN_PROCESS: "En proceso",
+  WITH_ISSUES: "Con problemas",
 };
 
 function ctaLabel(cta: string | null): string {

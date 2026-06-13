@@ -323,7 +323,17 @@ async function syncAdAccount({
     const campaignsResponse = await metaGraphGet<GraphCampaign>(
         `/${metaAccountId}/campaigns`,
         accessToken,
-        { fields: 'id,name,status,objective,daily_budget,lifetime_budget', limit: '100' }
+        {
+            fields: 'id,name,status,objective,daily_budget,lifetime_budget',
+            filtering: JSON.stringify([
+                {
+                    field: 'effective_status',
+                    operator: 'IN',
+                    value: ['ACTIVE', 'PAUSED', 'DELETED', 'ARCHIVED', 'IN_PROCESS', 'WITH_ISSUES'],
+                },
+            ]),
+            limit: '100',
+        }
     )
 
     for (const campaign of campaignsResponse.data ?? []) {
