@@ -1,66 +1,190 @@
-"use client";
-
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   DollarSign,
   Users,
   TrendingUp,
   Target,
-  ArrowUpRight,
-  ArrowDownRight,
   MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getSupabaseServer } from "@/lib/supabase/server";
+import { MarketingChart } from "./marketing-chart";
 
-const kpis = [
-  { label: "Inversión publicitaria", value: "$48,290", delta: "+12.4%", up: true, icon: DollarSign },
-  { label: "Leads totales", value: "1,284", delta: "+8.7%", up: true, icon: Users },
-  { label: "Tasa de conversión", value: "6.8%", delta: "+1.2pp", up: true, icon: TrendingUp },
-  { label: "ROAS", value: "4.2x", delta: "-0.3x", up: false, icon: Target },
-];
+const STATUS_LABELS: Record<string, { label: string; classes: string }> = {
+  ACTIVE: { label: "Activa", classes: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+  PAUSED: { label: "Pausada", classes: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
+  ARCHIVED: { label: "Archivada", classes: "bg-muted-foreground/10 text-muted-foreground border-border" },
+  DELETED: { label: "Eliminada", classes: "bg-muted-foreground/10 text-muted-foreground border-border" },
+};
 
-const series = [
-  { d: "Lun", spend: 4200, leads: 92 },
-  { d: "Mar", spend: 5100, leads: 108 },
-  { d: "Mié", spend: 4800, leads: 121 },
-  { d: "Jue", spend: 6300, leads: 154 },
-  { d: "Vie", spend: 7200, leads: 189 },
-  { d: "Sáb", spend: 5900, leads: 167 },
-  { d: "Dom", spend: 6800, leads: 201 },
-];
+function StatusBadge({ s }: { s: string | null }) {
+  const info = s
+    ? STATUS_LABELS[s.toUpperCase()] ?? { label: s, classes: "bg-muted-foreground/10 text-muted-foreground border-border" }
+    : { label: "Sin estado", classes: "bg-muted-foreground/10 text-muted-foreground border-border" };
 
-const campaigns = [
-  { name: "Q4 Retargeting — LATAM", status: "Activa", spend: 12480, leads: 342, roas: 5.2 },
-  { name: "Lookalike 1% · MX High Intent", status: "Activa", spend: 9230, leads: 287, roas: 4.8 },
-  { name: "Tráfico Frío · Reels Mix", status: "Pausada", spend: 6810, leads: 124, roas: 2.1 },
-  { name: "Awareness de Marca · Stories", status: "Activa", spend: 5420, leads: 201, roas: 3.6 },
-  { name: "Lead Magnet · Descarga Ebook", status: "Activa", spend: 4980, leads: 187, roas: 4.1 },
-  { name: "Teaser Black Friday", status: "Borrador", spend: 0, leads: 0, roas: 0 },
-];
-
-function StatusBadge({ s }: { s: string }) {
-  const map: Record<string, string> = {
-    Activa: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    Pausada: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-    Borrador: "bg-muted-foreground/10 text-muted-foreground border-border",
-  };
   return (
-    <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[11px] font-medium", map[s])}>
+    <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[11px] font-medium", info.classes)}>
       <span className="size-1.5 rounded-full bg-current" />
-      {s}
+      {info.label}
     </span>
   );
 }
 
-export default function MarketingOverview() {
+export default async function MarketingOverview() {
+  const supabase = await getSupabaseServer();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!profile) {
+    redirect("/onboarding");
+  }
+
+  const organizationId = profile.organization_id;
+
+  const { data: account } = await supabase
+    .from("meta_ad_accounts")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (!account) {
+    return (
+      <div className="p-8 max-w-[1400px]">
+        <div className="rounded-2xl glass-card p-10 text-center space-y-3">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">Marketing Intelligence</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Sin cuenta de Meta Ads conectada</h1>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Conecta tu cuenta de Meta en Configuración para ver el rendimiento de tus campañas aquí.
+          </p>
+          <Link
+            href="/marketing/settings"
+            className="inline-flex h-9 px-4 rounded-lg gradient-primary text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:opacity-95 transition items-center"
+          >
+            Ir a Configuración
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Date range: last 30 days ─────────────────────────────────────
+  const today = new Date();
+  const startDate = new Date(today);
+  startDate.setDate(startDate.getDate() - 29);
+  const startDateStr = startDate.toISOString().slice(0, 10);
+
+  const [{ data: metrics, error: metricsError }, { data: campaigns, error: campaignsError }, { data: adSets }, { data: ads }] =
+    await Promise.all([
+      supabase
+        .from("meta_ad_metrics")
+        .select("ad_id, date, spend, leads, ctr")
+        .eq("organization_id", organizationId)
+        .gte("date", startDateStr)
+        .order("date", { ascending: true }),
+      supabase
+        .from("meta_campaigns")
+        .select("id, name, status, total_spend")
+        .eq("organization_id", organizationId)
+        .order("total_spend", { ascending: false }),
+      supabase
+        .from("meta_ad_sets")
+        .select("id, campaign_id")
+        .eq("organization_id", organizationId),
+      supabase
+        .from("meta_ads")
+        .select("id, ad_set_id")
+        .eq("organization_id", organizationId),
+    ]);
+
+  if (metricsError) console.error("META AD METRICS ERROR:", metricsError);
+  if (campaignsError) console.error("META CAMPAIGNS ERROR:", campaignsError);
+
+  const metricRows = metrics ?? [];
+
+  // ── KPIs: sum spend, sum leads, average CTR ──────────────────────
+  const totalSpend = metricRows.reduce((sum, m) => sum + Number(m.spend), 0);
+  const totalLeads = metricRows.reduce((sum, m) => sum + Number(m.leads), 0);
+  const avgCtr =
+    metricRows.length > 0
+      ? metricRows.reduce((sum, m) => sum + Number(m.ctr), 0) / metricRows.length
+      : 0;
+  const costPerLead = totalLeads > 0 ? totalSpend / totalLeads : 0;
+
+  const kpis = [
+    {
+      label: "Inversión publicitaria (30 días)",
+      value: `$${totalSpend.toLocaleString("es-MX", { maximumFractionDigits: 0 })}`,
+      icon: DollarSign,
+    },
+    {
+      label: "Leads totales (30 días)",
+      value: totalLeads.toLocaleString("es-MX"),
+      icon: Users,
+    },
+    {
+      label: "CTR promedio",
+      value: `${avgCtr.toFixed(2)}%`,
+      icon: TrendingUp,
+    },
+    {
+      label: "Costo por lead",
+      value: `$${costPerLead.toFixed(2)}`,
+      icon: Target,
+    },
+  ];
+
+  // ── Chart series: spend + leads grouped by day ───────────────────
+  const seriesMap = new Map<string, { spend: number; leads: number }>();
+  for (const m of metricRows) {
+    const entry = seriesMap.get(m.date) ?? { spend: 0, leads: 0 };
+    entry.spend += Number(m.spend);
+    entry.leads += Number(m.leads);
+    seriesMap.set(m.date, entry);
+  }
+  const series = Array.from(seriesMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, v]) => ({
+      d: `${date.slice(8, 10)}/${date.slice(5, 7)}`,
+      spend: Math.round(v.spend),
+      leads: v.leads,
+    }));
+
+  // ── Campaign table: name, status, spend, leads ───────────────────
+  const adSetToCampaign = new Map((adSets ?? []).map((a) => [a.id, a.campaign_id]));
+  const adToCampaign = new Map(
+    (ads ?? []).map((a) => [a.id, a.ad_set_id ? adSetToCampaign.get(a.ad_set_id) ?? null : null])
+  );
+
+  const leadsByCampaign = new Map<string, number>();
+  for (const m of metricRows) {
+    if (!m.ad_id) continue;
+    const campaignId = adToCampaign.get(m.ad_id);
+    if (!campaignId) continue;
+    leadsByCampaign.set(campaignId, (leadsByCampaign.get(campaignId) ?? 0) + Number(m.leads));
+  }
+
+  const campaignRows = (campaigns ?? []).map((c) => ({
+    id: c.id,
+    name: c.name ?? "Sin nombre",
+    status: c.status,
+    spend: Number(c.total_spend ?? 0),
+    leads: leadsByCampaign.get(c.id) ?? 0,
+    roas: 0,
+  }));
+
   return (
     <div className="p-8 space-y-8 max-w-[1400px]">
       <div className="flex items-end justify-between flex-wrap gap-4">
@@ -68,12 +192,12 @@ export default function MarketingOverview() {
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Marketing Intelligence</p>
           <h1 className="text-3xl font-semibold tracking-tight">Resumen</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Rendimiento en tiempo real de todas tus campañas de Meta Ads. Últimos 7 días.
+            Rendimiento en tiempo real de todas tus campañas de Meta Ads. Últimos 30 días.
           </p>
         </div>
         <div className="flex gap-2">
           <button className="h-9 px-4 rounded-lg border border-border bg-secondary/40 text-sm hover:bg-secondary transition">
-            Últimos 7 días
+            Últimos 30 días
           </button>
           <button className="h-9 px-4 rounded-lg gradient-primary text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:opacity-95 transition">
             Sincronizar ahora
@@ -93,17 +217,6 @@ export default function MarketingOverview() {
               <div className="size-10 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-indigo-500/20">
                 <k.icon className="size-5 text-white" strokeWidth={2.2} />
               </div>
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md",
-                  k.up
-                    ? "bg-emerald-500/10 text-emerald-400"
-                    : "bg-rose-500/10 text-rose-400",
-                )}
-              >
-                {k.up ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
-                {k.delta}
-              </span>
             </div>
             <div className="mt-5 relative">
               <p className="text-xs text-muted-foreground">{k.label}</p>
@@ -132,33 +245,7 @@ export default function MarketingOverview() {
           </div>
         </div>
         <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={series} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-              <defs>
-                <linearGradient id="gSpend" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="oklch(0.62 0.22 280)" stopOpacity={0.6} />
-                  <stop offset="100%" stopColor="oklch(0.62 0.22 280)" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="gLeads" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="oklch(0.7 0.18 160)" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="oklch(0.7 0.18 160)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 6%)" vertical={false} />
-              <XAxis dataKey="d" stroke="oklch(0.65 0.02 270)" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="oklch(0.65 0.02 270)" fontSize={12} tickLine={false} axisLine={false} />
-              <Tooltip
-                contentStyle={{
-                  background: "oklch(0.18 0.02 270)",
-                  border: "1px solid oklch(1 0 0 / 10%)",
-                  borderRadius: 12,
-                  fontSize: 12,
-                }}
-              />
-              <Area type="monotone" dataKey="spend" stroke="oklch(0.62 0.22 280)" strokeWidth={2} fill="url(#gSpend)" />
-              <Area type="monotone" dataKey="leads" stroke="oklch(0.7 0.18 160)" strokeWidth={2} fill="url(#gLeads)" />
-            </AreaChart>
-          </ResponsiveContainer>
+          <MarketingChart series={series} />
         </div>
       </div>
 
@@ -183,27 +270,35 @@ export default function MarketingOverview() {
             </tr>
           </thead>
           <tbody>
-            {campaigns.map((c, i) => (
-              <tr key={c.name} className={cn("border-b border-border/40 hover:bg-secondary/20 transition", i === campaigns.length - 1 && "border-b-0")}>
-                <td className="px-6 py-4 font-medium">{c.name}</td>
-                <td className="px-3 py-4"><StatusBadge s={c.status} /></td>
-                <td className="px-3 py-4 text-right tabular-nums">${c.spend.toLocaleString()}</td>
-                <td className="px-3 py-4 text-right tabular-nums">{c.leads.toLocaleString()}</td>
-                <td className="px-3 py-4 text-right tabular-nums">
-                  <span className={cn(
-                    "font-medium",
-                    c.roas >= 4 ? "text-emerald-400" : c.roas >= 2 ? "text-amber-400" : c.roas === 0 ? "text-muted-foreground" : "text-rose-400",
-                  )}>
-                    {c.roas === 0 ? "—" : `${c.roas}x`}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button className="size-7 rounded-md hover:bg-secondary flex items-center justify-center ml-auto">
-                    <MoreHorizontal className="size-4 text-muted-foreground" />
-                  </button>
+            {campaignRows.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                  Todavía no hay campañas sincronizadas.
                 </td>
               </tr>
-            ))}
+            ) : (
+              campaignRows.map((c, i) => (
+                <tr key={c.id} className={cn("border-b border-border/40 hover:bg-secondary/20 transition", i === campaignRows.length - 1 && "border-b-0")}>
+                  <td className="px-6 py-4 font-medium">{c.name}</td>
+                  <td className="px-3 py-4"><StatusBadge s={c.status} /></td>
+                  <td className="px-3 py-4 text-right tabular-nums">${c.spend.toLocaleString("es-MX", { maximumFractionDigits: 0 })}</td>
+                  <td className="px-3 py-4 text-right tabular-nums">{c.leads.toLocaleString("es-MX")}</td>
+                  <td className="px-3 py-4 text-right tabular-nums">
+                    <span className={cn(
+                      "font-medium",
+                      c.roas >= 4 ? "text-emerald-400" : c.roas >= 2 ? "text-amber-400" : c.roas === 0 ? "text-muted-foreground" : "text-rose-400",
+                    )}>
+                      {c.roas === 0 ? "—" : `${c.roas}x`}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button className="size-7 rounded-md hover:bg-secondary flex items-center justify-center ml-auto">
+                      <MoreHorizontal className="size-4 text-muted-foreground" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

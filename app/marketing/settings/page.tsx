@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Copy, Check, RefreshCw, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { saveMetaAdAccount } from "./actions";
 
 export default function SettingsPage() {
   const [copied, setCopied] = useState(false);
@@ -66,32 +67,36 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        <Field label="ID de cuenta publicitaria">
-          <input
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-            className="w-full h-10 rounded-lg bg-secondary/50 border border-border/60 px-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring/40"
-            placeholder="act_1234567890"
-          />
-        </Field>
+        <form action={saveMetaAdAccount} className="space-y-5">
+          <Field label="ID de cuenta publicitaria">
+            <input
+              name="meta_account_id"
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+              className="w-full h-10 rounded-lg bg-secondary/50 border border-border/60 px-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring/40"
+              placeholder="act_1234567890"
+            />
+          </Field>
 
-        <Field label="Token de acceso">
-          <input
-            type="password"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            className="w-full h-10 rounded-lg bg-secondary/50 border border-border/60 px-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring/40"
-          />
-          <p className="text-[11px] text-muted-foreground mt-1.5">
-            Genéralo desde Meta Business → Usuarios del Sistema → Generar token.
-          </p>
-        </Field>
+          <Field label="Token de acceso">
+            <input
+              type="password"
+              name="access_token"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              className="w-full h-10 rounded-lg bg-secondary/50 border border-border/60 px-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring/40"
+            />
+            <p className="text-[11px] text-muted-foreground mt-1.5">
+              Genéralo desde Meta Business → Usuarios del Sistema → Generar token.
+            </p>
+          </Field>
 
-        <div className="flex justify-end pt-2 border-t border-border/40">
-          <button className="h-9 px-4 rounded-lg gradient-primary text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:opacity-95 transition">
-            Guardar credenciales
-          </button>
-        </div>
+          <div className="flex justify-end pt-2 border-t border-border/40">
+            <button type="submit" className="h-9 px-4 rounded-lg gradient-primary text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:opacity-95 transition">
+              Guardar credenciales
+            </button>
+          </div>
+        </form>
       </section>
 
       {/* Webhook */}
