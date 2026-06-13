@@ -68,7 +68,7 @@ export async function updateQuoteMeta(formData: FormData) {
 
     const { data: quote } = await supabase
         .from('quotes')
-        .select('id')
+        .select('id, client_id, quote_number')
         .eq('id', quoteId)
         .eq('organization_id', profile.organization_id)
         .maybeSingle()
@@ -108,6 +108,22 @@ export async function updateQuoteMeta(formData: FormData) {
 
     await recalculateQuoteTotals(supabase, quoteId, profile.organization_id)
 
+    if (quote.client_id) {
+        const { error: activityError } = await supabase
+            .from('client_activities')
+            .insert({
+                organization_id: profile.organization_id,
+                client_id: quote.client_id,
+                created_by: user.id,
+                type: 'quote_updated',
+                title: 'Cotización actualizada',
+                description: `Se actualizó la cotización ${quote.quote_number}.`,
+                metadata: { quote_id: quoteId, quote_number: quote.quote_number },
+            })
+
+        if (activityError) console.error('QUOTE UPDATED ACTIVITY ERROR:', activityError)
+    }
+
     revalidatePath(`/quotes/${quoteId}`)
 }
 
@@ -133,7 +149,7 @@ export async function upsertQuoteItem(formData: FormData) {
 
     const { data: quote } = await supabase
         .from('quotes')
-        .select('id')
+        .select('id, client_id, quote_number')
         .eq('id', quoteId)
         .eq('organization_id', profile.organization_id)
         .maybeSingle()
@@ -200,6 +216,22 @@ export async function upsertQuoteItem(formData: FormData) {
 
     await recalculateQuoteTotals(supabase, quoteId, profile.organization_id)
 
+    if (quote.client_id) {
+        const { error: activityError } = await supabase
+            .from('client_activities')
+            .insert({
+                organization_id: profile.organization_id,
+                client_id: quote.client_id,
+                created_by: user.id,
+                type: 'quote_item_updated',
+                title: 'Partida actualizada',
+                description: name,
+                metadata: { quote_id: quoteId, quote_number: quote.quote_number },
+            })
+
+        if (activityError) console.error('QUOTE ITEM UPDATED ACTIVITY ERROR:', activityError)
+    }
+
     revalidatePath(`/quotes/${quoteId}/edit`)
     revalidatePath(`/quotes/${quoteId}`)
 }
@@ -226,7 +258,7 @@ export async function deleteQuoteItem(formData: FormData) {
 
     const { data: quote } = await supabase
         .from('quotes')
-        .select('id')
+        .select('id, client_id, quote_number')
         .eq('id', quoteId)
         .eq('organization_id', profile.organization_id)
         .maybeSingle()
@@ -234,6 +266,13 @@ export async function deleteQuoteItem(formData: FormData) {
     if (!quote) {
         throw new Error('Quote not found')
     }
+
+    const { data: item } = await supabase
+        .from('quote_items')
+        .select('name')
+        .eq('id', itemId)
+        .eq('quote_id', quoteId)
+        .maybeSingle()
 
     const { error } = await supabase
         .from('quote_items')
@@ -246,6 +285,22 @@ export async function deleteQuoteItem(formData: FormData) {
     }
 
     await recalculateQuoteTotals(supabase, quoteId, profile.organization_id)
+
+    if (quote.client_id) {
+        const { error: activityError } = await supabase
+            .from('client_activities')
+            .insert({
+                organization_id: profile.organization_id,
+                client_id: quote.client_id,
+                created_by: user.id,
+                type: 'quote_item_deleted',
+                title: 'Partida eliminada',
+                description: item?.name ?? null,
+                metadata: { quote_id: quoteId, quote_number: quote.quote_number },
+            })
+
+        if (activityError) console.error('QUOTE ITEM DELETED ACTIVITY ERROR:', activityError)
+    }
 
     revalidatePath(`/quotes/${quoteId}/edit`)
     revalidatePath(`/quotes/${quoteId}`)

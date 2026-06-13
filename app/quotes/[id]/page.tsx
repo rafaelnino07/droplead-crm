@@ -244,9 +244,9 @@ export default async function QuoteDetailPage({
                             <span className="tabular-nums">${Number(quote.subtotal).toLocaleString('es-MX')}</span>
                         </div>
 
-                        {quote.discount_amount > 0 && (
+                        {(quote.discount_global > 0 || quote.discount_amount > 0) && (
                             <div className="flex justify-between">
-                                <span className="text-neutral-400">Descuento</span>
+                                <span className="text-neutral-400">Descuento ({quote.discount_global}%)</span>
                                 <span className="tabular-nums text-red-400">
                                     -${Number(quote.discount_amount).toLocaleString('es-MX')}
                                 </span>

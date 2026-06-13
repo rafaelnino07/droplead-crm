@@ -239,6 +239,7 @@ export default async function ClientDetailPage({
                         <h2 className="mt-2 text-5xl font-bold">
                             ${moneyRadar.totalDetected.toLocaleString('es-MX')}
                         </h2>
+                        <p className="mt-1 text-xs text-neutral-500">Valor neto después de descuentos aplicados</p>
                         <p className="mt-2 text-xl text-neutral-300">{moneyRadar.status}</p>
                     </div>
 
@@ -561,6 +562,9 @@ export default async function ClientDetailPage({
                                     <div>
                                         <p className="font-semibold">{quote.quote_number}</p>
                                         <p className="text-neutral-400">{quote.project_name}</p>
+                                        {quote.discount_global > 0 && (
+                                            <p className="text-xs text-amber-400">Descuento {quote.discount_global}%</p>
+                                        )}
                                     </div>
 
                                     <div className="text-right">
