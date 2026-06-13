@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '../actions'
+import { ClientFields } from './client-fields'
 
 export default function NewClientPage({
     searchParams,
@@ -26,31 +27,7 @@ export default function NewClientPage({
                     </p>
                 )}
 
-                <input
-                    name="name"
-                    placeholder="Nombre del cliente"
-                    required
-                    className="w-full rounded bg-neutral-800 px-4 py-3 outline-none"
-                />
-
-                <input
-                    name="company"
-                    placeholder="Empresa"
-                    className="w-full rounded bg-neutral-800 px-4 py-3 outline-none"
-                />
-
-                <input
-                    name="email"
-                    type="email"
-                    placeholder="Correo"
-                    className="w-full rounded bg-neutral-800 px-4 py-3 outline-none"
-                />
-
-                <input
-                    name="phone"
-                    placeholder="Teléfono"
-                    className="w-full rounded bg-neutral-800 px-4 py-3 outline-none"
-                />
+                <ClientFields />
 
                 <button className="rounded bg-white px-4 py-3 font-semibold text-black">
                     Guardar cliente

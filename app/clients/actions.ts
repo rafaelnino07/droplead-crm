@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { getSupabaseServer } from '@/lib/supabase/server'
+import type { ClientType } from '@/lib/types/database'
 
 export async function createClient(formData: FormData) {
     const supabase = await getSupabaseServer()
@@ -10,6 +11,7 @@ export async function createClient(formData: FormData) {
     const email = String(formData.get('email')).trim()
     const phone = String(formData.get('phone')).trim()
     const company = String(formData.get('company')).trim()
+    const clientType: ClientType = formData.get('client_type') === 'persona' ? 'persona' : 'empresa'
 
     const {
         data: { user },
@@ -30,6 +32,7 @@ export async function createClient(formData: FormData) {
         .insert({
             organization_id: profile.organization_id,
             name,
+            client_type: clientType,
             email: email || null,
             phone: phone || null,
             company: company || null,

@@ -34,6 +34,7 @@ export default async function PublicQuotePage({
       clients (
         id,
         name,
+        client_type,
         company,
         email,
         phone
@@ -112,7 +113,11 @@ export default async function PublicQuotePage({
 
                     <div className="mt-4 text-neutral-300">
                         <p>{client?.name ?? 'Cliente'}</p>
-                        {client?.company && <p className="text-neutral-500">{client.company}</p>}
+                        {client?.client_type !== 'persona' && client?.company && (
+                            <p className="text-neutral-500">{client.company}</p>
+                        )}
+                        {client?.email && <p className="text-neutral-500">{client.email}</p>}
+                        {client?.phone && <p className="text-neutral-500">{client.phone}</p>}
                     </div>
 
                     {quote.executive_name && (
@@ -227,7 +232,7 @@ export default async function PublicQuotePage({
 
                 <footer className="mt-10 text-center text-sm text-neutral-500">
                     {quote.valid_until && (
-                        <p>Válida hasta: {new Date(quote.valid_until).toLocaleDateString('es-MX')}</p>
+                        <p>Válida hasta: {new Date(quote.valid_until).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                     )}
                     <p className="mt-2">Esta cotización fue generada con Droplead</p>
                 </footer>

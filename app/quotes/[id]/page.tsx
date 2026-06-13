@@ -105,24 +105,24 @@ export default async function QuoteDetailPage({
                         </p>
                     </div>
 
-                    {quote.status === 'draft' && (
-                        <Link
-                            href={`/quotes/${quote.id}/edit`}
-                            className="rounded bg-white px-4 py-2 text-sm font-semibold text-black"
-                        >
-                            Editar cotización
-                        </Link>
-                    )}
+                    <div className="flex items-center gap-3">
+                        {quote.status === 'draft' && (
+                            <Link
+                                href={`/quotes/${quote.id}/edit`}
+                                className="rounded bg-white px-4 py-2 text-sm font-semibold text-black"
+                            >
+                                Editar cotización
+                            </Link>
+                        )}
 
-                    {quote.status !== 'draft' && (
                         <Link
                             href={`/quotes/${quote.id}/print`}
                             target="_blank"
                             className="rounded bg-white px-4 py-2 text-sm font-semibold text-black"
                         >
-                            Ver versión imprimible / Descargar PDF
+                            {quote.status === 'draft' ? 'Previsualizar PDF' : 'Ver PDF / Descargar'}
                         </Link>
-                    )}
+                    </div>
                 </div>
 
                 <div className="mt-8 grid gap-4 md:grid-cols-2">

@@ -16,6 +16,7 @@ import type { FileCategory } from '@/lib/files/categories'
 
 export type Plan = 'trial' | 'starter' | 'pro' | 'agency'
 export type Role = 'owner' | 'admin' | 'member'
+export type ClientType = 'persona' | 'empresa'
 export type QuoteStatus =
     | 'draft' | 'sent' | 'viewed'
     | 'accepted' | 'rejected' | 'expired'
@@ -83,6 +84,7 @@ export interface Client {
     id: string
     organization_id: string
     name: string
+    client_type: ClientType
     company: string | null
     email: string | null
     phone: string | null

@@ -54,6 +54,7 @@ export async function POST(request: Request) {
         .insert({
             organization_id: ad.organization_id,
             name,
+            client_type: 'empresa',
             email: email ?? null,
             phone: phone ?? null,
             company: company ?? null,

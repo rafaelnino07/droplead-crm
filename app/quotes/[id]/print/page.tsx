@@ -43,6 +43,7 @@ export default async function PrintQuotePage({
       clients (
         id,
         name,
+        client_type,
         company,
         email,
         phone
@@ -119,7 +120,7 @@ export default async function PrintQuotePage({
                     <div className="text-right">
                         <p className="font-semibold">{quote.quote_number}</p>
                         <p className="text-sm text-neutral-600">
-                            {new Date(quote.created_at).toLocaleDateString('es-MX')}
+                            {new Date(quote.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}
                         </p>
                     </div>
                 </header>
@@ -129,7 +130,9 @@ export default async function PrintQuotePage({
                     <p className="text-sm font-semibold text-neutral-500">Cliente</p>
                     <div className="mt-2 grid gap-2 sm:grid-cols-2">
                         <p><span className="text-neutral-500">Nombre:</span> {client?.name ?? 'Sin cliente'}</p>
-                        <p><span className="text-neutral-500">Empresa:</span> {client?.company ?? '—'}</p>
+                        {client?.client_type !== 'persona' && client?.company && (
+                            <p><span className="text-neutral-500">Empresa:</span> {client.company}</p>
+                        )}
                         <p><span className="text-neutral-500">Correo:</span> {client?.email ?? '—'}</p>
                         <p><span className="text-neutral-500">Teléfono:</span> {client?.phone ?? '—'}</p>
                     </div>
@@ -234,7 +237,7 @@ export default async function PrintQuotePage({
                         </p>
                     )}
                     {quote.valid_until && (
-                        <p className="mt-1">Válida hasta: {new Date(quote.valid_until).toLocaleDateString('es-MX')}</p>
+                        <p className="mt-1">Válida hasta: {new Date(quote.valid_until).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                     )}
                     <p className="mt-2">Generado con Droplead</p>
                 </footer>
