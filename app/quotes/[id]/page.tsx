@@ -113,6 +113,16 @@ export default async function QuoteDetailPage({
                             Editar cotización
                         </Link>
                     )}
+
+                    {quote.status !== 'draft' && (
+                        <Link
+                            href={`/quotes/${quote.id}/print`}
+                            target="_blank"
+                            className="rounded bg-white px-4 py-2 text-sm font-semibold text-black"
+                        >
+                            Ver versión imprimible / Descargar PDF
+                        </Link>
+                    )}
                 </div>
 
                 <div className="mt-8 grid gap-4 md:grid-cols-2">
