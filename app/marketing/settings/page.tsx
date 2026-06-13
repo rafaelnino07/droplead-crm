@@ -1,28 +1,37 @@
-"use client";
-
-import { useState } from "react";
-import { Copy, Check, RefreshCw, CheckCircle2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { redirect } from "next/navigation";
+import { CheckCircle2 } from "lucide-react";
+import { getSupabaseServer } from "@/lib/supabase/server";
 import { saveMetaAdAccount } from "./actions";
+import { SyncButton, CopyButton } from "./settings-client";
 
-export default function SettingsPage() {
-  const [copied, setCopied] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [accountId, setAccountId] = useState("act_1029384756");
-  const [token, setToken] = useState("EAAGm0PX••••••••••••••••••••••••");
+export default async function SettingsPage() {
+  const supabase = await getSupabaseServer();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!profile) {
+    redirect("/onboarding");
+  }
+
+  const { data: account } = await supabase
+    .from("meta_ad_accounts")
+    .select("meta_account_id, access_token_encrypted")
+    .eq("organization_id", profile.organization_id)
+    .maybeSingle();
 
   const webhookUrl = "https://droplead.app/api/webhooks/lead";
-
-  const copy = async () => {
-    await navigator.clipboard.writeText(webhookUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
-  const sync = () => {
-    setSyncing(true);
-    setTimeout(() => setSyncing(false), 1400);
-  };
 
   return (
     <div className="p-8 max-w-3xl space-y-8">
@@ -48,14 +57,7 @@ export default function SettingsPage() {
             Última sincronización: <span className="text-foreground/80">hace 2 minutos</span> · 1,284 leads sincronizados
           </p>
         </div>
-        <button
-          onClick={sync}
-          disabled={syncing}
-          className="h-9 px-4 rounded-lg gradient-primary text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:opacity-95 transition flex items-center gap-2 disabled:opacity-70"
-        >
-          <RefreshCw className={cn("size-4", syncing && "animate-spin")} />
-          {syncing ? "Sincronizando…" : "Sincronizar ahora"}
-        </button>
+        <SyncButton />
       </div>
 
       {/* Credentials */}
@@ -71,8 +73,7 @@ export default function SettingsPage() {
           <Field label="ID de cuenta publicitaria">
             <input
               name="meta_account_id"
-              value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
+              defaultValue={account?.meta_account_id ?? ""}
               className="w-full h-10 rounded-lg bg-secondary/50 border border-border/60 px-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring/40"
               placeholder="act_1234567890"
             />
@@ -82,8 +83,7 @@ export default function SettingsPage() {
             <input
               type="password"
               name="access_token"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
+              defaultValue={account?.access_token_encrypted ?? ""}
               className="w-full h-10 rounded-lg bg-secondary/50 border border-border/60 px-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring/40"
             />
             <p className="text-[11px] text-muted-foreground mt-1.5">
@@ -113,20 +113,7 @@ export default function SettingsPage() {
             POST
           </span>
           <code className="flex-1 px-3 py-2.5 text-sm font-mono truncate">{webhookUrl}</code>
-          <button
-            onClick={copy}
-            className="px-4 border-l border-border/60 hover:bg-secondary transition flex items-center gap-2 text-xs font-medium"
-          >
-            {copied ? (
-              <>
-                <Check className="size-3.5 text-emerald-400" /> Copiado
-              </>
-            ) : (
-              <>
-                <Copy className="size-3.5" /> Copiar
-              </>
-            )}
-          </button>
+          <CopyButton text={webhookUrl} />
         </div>
 
         <div className="rounded-lg bg-indigo-500/5 border border-indigo-500/20 p-3 text-xs text-muted-foreground">
