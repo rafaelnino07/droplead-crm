@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Notification } from "@/lib/types/database";
@@ -35,6 +36,7 @@ export function NotificationBell({
   initialCount: number;
   initialNotifications: NotificationWithClient[];
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState(initialNotifications);
   const [count, setCount] = useState(initialCount);
@@ -55,6 +57,14 @@ export function NotificationBell({
     setNotifications((prev) => prev.filter((n) => n.id !== id));
     setCount((prev) => Math.max(0, prev - 1));
     void markAsRead(id);
+  };
+
+  const handleNotificationClick = (notification: NotificationWithClient) => {
+    handleMarkAsRead(notification.id);
+    if (notification.client_id) {
+      router.push(`/clients/${notification.client_id}`);
+    }
+    setOpen(false);
   };
 
   const handleMarkAllAsRead = () => {
@@ -103,7 +113,7 @@ export function NotificationBell({
                   <button
                     key={notification.id}
                     type="button"
-                    onClick={() => handleMarkAsRead(notification.id)}
+                    onClick={() => handleNotificationClick(notification)}
                     className="block w-full px-4 py-3 text-left transition hover:bg-neutral-800"
                   >
                     <div className="flex items-center justify-between gap-2">
