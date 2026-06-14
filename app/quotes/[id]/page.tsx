@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { getSupabaseServer } from '@/lib/supabase/server'
+import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
 import type { QuoteStatus } from '@/lib/types/database'
 import { markQuoteAsSent, markQuoteAsAccepted, markQuoteAsRejected, generateShareToken } from './actions'
 import { CopyLinkButton } from './share-link-client'
@@ -52,6 +52,8 @@ export default async function QuoteDetailPage({
 
     if (!profile) redirect('/onboarding')
 
+    const organizationId = await getActiveOrganizationId(supabase, user.id)
+
     const { data: quote, error } = await supabase
         .from('quotes')
         .select(`
@@ -65,7 +67,7 @@ export default async function QuoteDetailPage({
       )
     `)
         .eq('id', params.id)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .maybeSingle()
 
     if (error) console.error('QUOTE DETAIL ERROR:', error)

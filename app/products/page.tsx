@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getSupabaseServer } from '@/lib/supabase/server'
+import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
 import { NewProductForm } from '../components/products/new-product-form'
 import { archiveProduct } from '@/lib/products/actions'
 
@@ -20,10 +20,12 @@ export default async function ProductsPage() {
 
     if (!profile) redirect('/login')
 
+    const organizationId = await getActiveOrganizationId(supabase, user.id)
+
     const { data: activeData, error } = await supabase
         .from('products')
         .select('*')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .eq('is_archived', false)
         .order('times_used', { ascending: false })
         .order('name', { ascending: true })
@@ -35,7 +37,7 @@ export default async function ProductsPage() {
     const { data: archivedData, error: archivedError } = await supabase
         .from('products')
         .select('*')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .eq('is_archived', true)
         .order('times_used', { ascending: false })
         .order('name', { ascending: true })

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-const HIDDEN_ROUTES = ["/", "/login", "/register", "/onboarding"];
+const HIDDEN_ROUTES = ["/", "/login", "/register", "/onboarding", "/admin"];
 
 type NavItem = { label: string; href: string };
 type NavSection = { title: string; items: NavItem[] };
@@ -32,7 +32,7 @@ const sections: NavSection[] = [
   },
 ];
 
-export function Sidebar() {
+export function Sidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
   const pathname = usePathname();
 
   if (HIDDEN_ROUTES.includes(pathname) || pathname.startsWith("/q/") || pathname.endsWith("/print")) {
@@ -74,6 +74,22 @@ export function Sidebar() {
           </div>
         ))}
       </nav>
+
+      {isSuperAdmin && (
+        <div className="mt-6 border-t border-neutral-800 pt-4">
+          <Link
+            href="/admin"
+            className={cn(
+              "block rounded-md px-2 py-2 text-sm transition",
+              pathname === "/admin"
+                ? "bg-neutral-800 text-white font-medium"
+                : "text-neutral-400 hover:bg-neutral-900 hover:text-white",
+            )}
+          >
+            Admin
+          </Link>
+        </div>
+      )}
     </aside>
   );
 }

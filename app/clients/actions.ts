@@ -12,6 +12,7 @@ export async function createClient(formData: FormData) {
     const email = String(formData.get('email')).trim()
     const phone = String(formData.get('phone')).trim()
     const company = String(formData.get('company')).trim()
+    const branchId = String(formData.get('branch_id') ?? '').trim()
     const clientType: ClientType = formData.get('client_type') === 'persona' ? 'persona' : 'empresa'
 
     const {
@@ -37,6 +38,7 @@ export async function createClient(formData: FormData) {
             email: email || null,
             phone: phone || null,
             company: company || null,
+            branch_id: branchId || null,
         })
         .select('id, name')
         .single()

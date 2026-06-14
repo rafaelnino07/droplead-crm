@@ -1,12 +1,39 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { getSupabaseServer } from '@/lib/supabase/server'
 import { createClient } from '../actions'
 import { ClientFields } from './client-fields'
 
-export default function NewClientPage({
+export default async function NewClientPage({
     searchParams,
 }: {
     searchParams: { error?: string }
 }) {
+    const supabase = await getSupabaseServer()
+
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) redirect('/login')
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+    if (!profile) redirect('/onboarding')
+
+    const { data: branchesData } = await supabase
+        .from('branches')
+        .select('id, name')
+        .eq('organization_id', profile.organization_id)
+        .eq('is_active', true)
+        .order('name')
+
+    const branches = branchesData ?? []
+
     return (
         <main className="min-h-screen bg-neutral-950 p-8 text-white">
             <div>
@@ -27,7 +54,7 @@ export default function NewClientPage({
                     </p>
                 )}
 
-                <ClientFields />
+                <ClientFields branches={branches} />
 
                 <button className="rounded bg-white px-4 py-3 font-semibold text-black">
                     Guardar cliente

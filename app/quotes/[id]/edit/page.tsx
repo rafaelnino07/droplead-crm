@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { getSupabaseServer } from '@/lib/supabase/server'
+import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
 import { FinancialPreview } from '../../../components/quotes/financial-preview'
 import { SaveAsProductForm } from '../../../components/quotes/save-as-product-form'
 import { updateQuoteMeta, upsertQuoteItem, deleteQuoteItem } from './actions'
@@ -27,11 +27,13 @@ export default async function EditQuotePage({
 
     if (!profile) redirect('/onboarding')
 
+    const organizationId = await getActiveOrganizationId(supabase, user.id)
+
     const { data: quote, error } = await supabase
         .from('quotes')
         .select('*')
         .eq('id', params.id)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .maybeSingle()
 
     if (error) console.error('QUOTE EDIT ERROR:', error)
@@ -52,7 +54,7 @@ export default async function EditQuotePage({
 
     const quoteItems = itemsData ?? []
 
-    const frequentProducts = await getFrequentProducts(profile.organization_id)
+    const frequentProducts = await getFrequentProducts(organizationId)
 
     const isNewQuote = !quote.project_name
 

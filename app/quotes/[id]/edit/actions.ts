@@ -111,6 +111,21 @@ export async function updateQuoteMeta(formData: FormData) {
     await recalculateQuoteTotals(supabase, quoteId, profile.organization_id)
 
     if (quote.client_id) {
+        const { data: client } = await supabase
+            .from('clients')
+            .select('branch_id')
+            .eq('id', quote.client_id)
+            .eq('organization_id', profile.organization_id)
+            .maybeSingle()
+
+        if (client) {
+            await supabase
+                .from('quotes')
+                .update({ branch_id: client.branch_id })
+                .eq('id', quoteId)
+                .eq('organization_id', profile.organization_id)
+        }
+
         const { error: activityError } = await supabase
             .from('client_activities')
             .insert({

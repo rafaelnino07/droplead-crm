@@ -1,12 +1,13 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getSupabaseServer } from '@/lib/supabase/server'
+import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
 import { calculateMoneyRadar } from '@/lib/scoring/money-radar'
 import { calculateNextBestAction, type NextBestActionResult } from '@/lib/scoring/next-best-action'
 import { detectMoneyLeaks, type MoneyLeak } from '@/lib/ai/money-leak-detector'
 import { getClientStageLabel, getClientStageProbability, type ClientStage } from '@/lib/scp/stages'
 import { formatTaskDueDate, isTaskOverdue } from '../components/tasks/constants'
 import { AIActionButton } from '../components/ui/ai-action-button'
+import { BranchFilter } from '@/components/branches/branch-filter'
 import { refreshMorningBrief } from './actions'
 
 const OPEN_QUOTE_STATUSES = ['draft', 'sent', 'viewed']
@@ -65,7 +66,11 @@ const LEAK_SEVERITY_LABELS: Record<MoneyLeak['severity'], string> = {
     info: 'Info',
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+    searchParams,
+}: {
+    searchParams: { branch_id?: string }
+}) {
     const supabase = await getSupabaseServer()
 
     const {
@@ -86,11 +91,44 @@ export default async function DashboardPage() {
         redirect('/onboarding')
     }
 
-    const organizationId = profile.organization_id
+    const organizationId = await getActiveOrganizationId(supabase, user.id)
+    const branchId = searchParams.branch_id
+
+    const { data: branchesData } = await supabase
+        .from('branches')
+        .select('id, name')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true)
+        .order('name')
+
+    const branches = branchesData ?? []
 
     const startOfMonth = new Date()
     startOfMonth.setDate(1)
     startOfMonth.setHours(0, 0, 0, 0)
+
+    let clientsQuery = supabase.from('clients').select('id, name, stage').eq('organization_id', organizationId)
+    let quotesQuery = supabase
+        .from('quotes')
+        .select('id, client_id, status, total, accepted_at, valid_until, sent_at, rejected_at, created_at')
+        .eq('organization_id', organizationId)
+    let tasksQuery = supabase
+        .from('tasks')
+        .select('id, title, priority, due_date, client_id')
+        .eq('organization_id', organizationId)
+        .eq('status', 'pending')
+    let pendingTasksQuery = supabase
+        .from('tasks')
+        .select('client_id, status, due_date')
+        .eq('organization_id', organizationId)
+        .eq('status', 'pending')
+
+    if (branchId) {
+        clientsQuery = clientsQuery.eq('branch_id', branchId)
+        quotesQuery = quotesQuery.eq('branch_id', branchId)
+        tasksQuery = tasksQuery.eq('branch_id', branchId)
+        pendingTasksQuery = pendingTasksQuery.eq('branch_id', branchId)
+    }
 
     const [
         { data: clientsData, error: clientsError },
@@ -100,24 +138,15 @@ export default async function DashboardPage() {
         { data: morningBriefData },
         { data: pendingTasksData, error: pendingTasksError },
     ] = await Promise.all([
-        supabase.from('clients').select('id, name, stage').eq('organization_id', organizationId),
-        supabase
-            .from('quotes')
-            .select('id, client_id, status, total, accepted_at, valid_until, sent_at, rejected_at, created_at')
-            .eq('organization_id', organizationId),
+        clientsQuery,
+        quotesQuery,
         supabase
             .from('client_activities')
             .select('id, client_id, type, title, description, created_at')
             .eq('organization_id', organizationId)
             .order('created_at', { ascending: false })
             .limit(100),
-        supabase
-            .from('tasks')
-            .select('id, title, priority, due_date, client_id')
-            .eq('organization_id', organizationId)
-            .eq('status', 'pending')
-            .order('due_date', { ascending: true, nullsFirst: false })
-            .limit(3),
+        tasksQuery.order('due_date', { ascending: true, nullsFirst: false }).limit(3),
         supabase
             .from('morning_briefs')
             .select('brief_text, generated_at')
@@ -125,11 +154,7 @@ export default async function DashboardPage() {
             .order('generated_at', { ascending: false })
             .limit(1)
             .maybeSingle(),
-        supabase
-            .from('tasks')
-            .select('client_id, status, due_date')
-            .eq('organization_id', organizationId)
-            .eq('status', 'pending'),
+        pendingTasksQuery,
     ])
 
     if (clientsError) console.error('DASHBOARD CLIENTS ERROR:', clientsError)
@@ -303,9 +328,16 @@ export default async function DashboardPage() {
 
     return (
         <main className="min-h-screen bg-neutral-950 p-8 text-white">
-            <div>
-                <p className="text-sm text-neutral-500">{dateLabel}</p>
-                <h1 className="mt-1 text-3xl font-bold">Buenos días, {firstName}</h1>
+            <div className="flex items-start justify-between gap-4">
+                <div>
+                    <p className="text-sm text-neutral-500">{dateLabel}</p>
+                    <h1 className="mt-1 text-3xl font-bold">Buenos días, {firstName}</h1>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <span className="text-sm text-neutral-500">Sucursal</span>
+                    <BranchFilter branches={branches} />
+                </div>
             </div>
 
             <section className="mt-6 rounded-xl border border-neutral-800 bg-neutral-900 p-5">

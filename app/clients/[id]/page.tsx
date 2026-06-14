@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getSupabaseServer } from '@/lib/supabase/server'
+import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
 import { calculateMomentum } from '@/lib/scoring/momentum'
 import { calculateScpHealth } from '@/lib/scoring/scp-health'
 import { calculateMoneyRadar } from '@/lib/scoring/money-radar'
@@ -51,55 +51,66 @@ export default async function ClientDetailPage({
 
     if (!profile) notFound()
 
+    const organizationId = await getActiveOrganizationId(supabase, user.id)
+
     const { data: client } = await supabase
         .from('clients')
         .select('*')
         .eq('id', id)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .single()
 
     if (!client) notFound()
+
+    const { data: branch } = client.branch_id
+        ? await supabase
+              .from('branches')
+              .select('name')
+              .eq('id', client.branch_id)
+              .eq('organization_id', organizationId)
+              .maybeSingle()
+        : { data: null }
 
     const { data: quotes } = await supabase
         .from('quotes')
         .select('*')
         .eq('client_id', client.id)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
 
     const { data: activities } = await supabase
         .from('client_activities')
         .select('*')
         .eq('client_id', client.id)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
 
     const { data: commercialMemory } = await supabase
         .from('commercial_memory')
         .select('*')
         .eq('client_id', client.id)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .maybeSingle()
 
     const { data: dealCoachAdvice } = await supabase
         .from('deal_coach_cache')
         .select('advice_text, generated_at')
         .eq('client_id', client.id)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .maybeSingle()
 
     const { data: clientFiles } = await supabase
         .from('client_files')
         .select('*')
         .eq('client_id', client.id)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
 
     const { data: clientTasks } = await supabase
         .from('tasks')
         .select('*')
         .eq('client_id', client.id)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .eq('status', 'pending')
         .order('due_date', { ascending: true, nullsFirst: false })
 
@@ -218,6 +229,12 @@ export default async function ClientDetailPage({
                             <span className="rounded-full bg-neutral-800 px-4 py-2 text-lg">
                                 {stageLabel}
                             </span>
+
+                            {branch && (
+                                <span className="rounded-full bg-neutral-800 px-4 py-2 text-lg text-neutral-400">
+                                    {branch.name}
+                                </span>
+                            )}
 
                             <span className="text-neutral-400">
                                 Progreso comercial: {pipelineProgress.percentage}%
@@ -593,7 +610,7 @@ export default async function ClientDetailPage({
 
                 <div className="mt-8">
                     <FileUpload
-                        organizationId={profile.organization_id}
+                        organizationId={organizationId}
                         clientId={client.id}
                         userId={user.id}
                     />

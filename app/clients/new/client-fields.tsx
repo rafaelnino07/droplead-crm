@@ -3,11 +3,27 @@
 import { useState } from 'react'
 import type { ClientType } from '@/lib/types/database'
 
-export function ClientFields() {
+export function ClientFields({ branches }: { branches: { id: string; name: string }[] }) {
     const [clientType, setClientType] = useState<ClientType>('empresa')
 
     return (
         <>
+            <div>
+                <label className="mb-1 block text-xs text-neutral-500">Sucursal</label>
+                <select
+                    name="branch_id"
+                    defaultValue=""
+                    className="w-full rounded bg-neutral-800 px-4 py-3 outline-none"
+                >
+                    <option value="">Sin sucursal</option>
+                    {branches.map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                            {branch.name}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
             <div>
                 <label className="mb-1 block text-xs text-neutral-500">Tipo de cliente</label>
                 <div className="flex gap-2">

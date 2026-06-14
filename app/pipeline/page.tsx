@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getSupabaseServer } from '@/lib/supabase/server'
+import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
 import { buildPipeline } from '@/lib/scp/pipeline'
 
 export default async function PipelinePage() {
@@ -24,10 +24,12 @@ export default async function PipelinePage() {
         redirect('/onboarding')
     }
 
+    const organizationId = await getActiveOrganizationId(supabase, user.id)
+
     const { data: clients, error } = await supabase
         .from('clients')
         .select('*')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
 

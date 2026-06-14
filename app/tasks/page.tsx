@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getSupabaseServer } from '@/lib/supabase/server'
+import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
 import { NewTaskForm } from '../components/tasks/new-task-form'
 import { TaskCard } from '../components/tasks/task-card'
 import type { Task } from '@/lib/types/database'
@@ -23,10 +23,12 @@ export default async function TasksPage() {
 
     if (!profile) redirect('/onboarding')
 
+    const organizationId = await getActiveOrganizationId(supabase, user.id)
+
     const { data: tasksData, error } = await supabase
         .from('tasks')
         .select('*')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .eq('status', 'pending')
         .order('due_date', { ascending: true, nullsFirst: false })
 

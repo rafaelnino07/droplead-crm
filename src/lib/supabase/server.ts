@@ -24,3 +24,29 @@ export async function getSupabaseServer() {
         }
     )
 }
+
+export async function getActiveOrganizationId(
+    supabase: Awaited<ReturnType<typeof getSupabaseServer>>,
+    userId: string
+): Promise<string> {
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+    const cookieStore = cookies()
+    const impersonatedOrgId = cookieStore.get('impersonated_org_id')?.value
+
+    if (impersonatedOrgId) {
+        const { data: superAdmin } = await supabase
+            .from('super_admins')
+            .select('id')
+            .eq('user_id', userId)
+            .maybeSingle()
+
+        if (superAdmin) return impersonatedOrgId
+    }
+
+    return profile?.organization_id ?? ''
+}

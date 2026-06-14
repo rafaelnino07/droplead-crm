@@ -9,7 +9,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { getSupabaseServer, getActiveOrganizationId } from "@/lib/supabase/server";
 import { MarketingChart } from "./marketing-chart";
 
 const STATUS_LABELS: Record<string, { label: string; classes: string }> = {
@@ -55,7 +55,7 @@ export default async function MarketingOverview() {
     redirect("/onboarding");
   }
 
-  const organizationId = profile.organization_id;
+  const organizationId = await getActiveOrganizationId(supabase, user.id);
 
   const { data: account } = await supabase
     .from("meta_ad_accounts")

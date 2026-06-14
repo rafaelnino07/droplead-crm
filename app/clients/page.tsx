@@ -1,9 +1,14 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getSupabaseServer } from '@/lib/supabase/server'
+import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
 import { getClientStageLabel, getClientStageProbability } from '@/lib/scp/stages'
+import { BranchFilter } from '@/components/branches/branch-filter'
 
-export default async function ClientsPage() {
+export default async function ClientsPage({
+    searchParams,
+}: {
+    searchParams: { branch_id?: string }
+}) {
     const supabase = await getSupabaseServer()
 
     const {
@@ -24,11 +29,30 @@ export default async function ClientsPage() {
         redirect('/onboarding')
     }
 
-    const { data: clients, error } = await supabase
+    const organizationId = await getActiveOrganizationId(supabase, user.id)
+
+    const { data: branchesData } = await supabase
+        .from('branches')
+        .select('id, name')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true)
+        .order('name')
+
+    const branches = branchesData ?? []
+    const branchNameById = new Map(branches.map((branch) => [branch.id, branch.name]))
+
+    const branchId = searchParams.branch_id
+
+    let clientsQuery = supabase
         .from('clients')
         .select('*')
-        .eq('organization_id', profile.organization_id)
-        .order('created_at', { ascending: false })
+        .eq('organization_id', organizationId)
+
+    if (branchId) {
+        clientsQuery = clientsQuery.eq('branch_id', branchId)
+    }
+
+    const { data: clients, error } = await clientsQuery.order('created_at', { ascending: false })
 
     if (error) {
         console.error('CLIENTS ERROR:', error)
@@ -64,7 +88,12 @@ export default async function ClientsPage() {
                 </div>
             </div>
 
-            <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900">
+            <div className="mt-6 flex items-center gap-3">
+                <span className="text-sm text-neutral-500">Sucursal</span>
+                <BranchFilter branches={branches} />
+            </div>
+
+            <section className="mt-6 rounded-xl border border-neutral-800 bg-neutral-900">
                 {!clients || clients.length === 0 ? (
                     <div className="p-6 text-neutral-400">
                         Todavía no tienes clientes registrados.
@@ -90,9 +119,17 @@ export default async function ClientsPage() {
                                     </div>
 
                                     <div className="text-right">
-                                        <p className="rounded-full bg-neutral-800 px-3 py-1 text-sm text-neutral-300">
-                                            {getClientStageLabel(client.stage)}
-                                        </p>
+                                        <div className="flex items-center justify-end gap-2">
+                                            {client.branch_id && branchNameById.has(client.branch_id) && (
+                                                <p className="rounded-full bg-neutral-800 px-3 py-1 text-sm text-neutral-400">
+                                                    {branchNameById.get(client.branch_id)}
+                                                </p>
+                                            )}
+
+                                            <p className="rounded-full bg-neutral-800 px-3 py-1 text-sm text-neutral-300">
+                                                {getClientStageLabel(client.stage)}
+                                            </p>
+                                        </div>
 
                                         <p className="mt-2 text-xs text-neutral-500">
                                             Forecast base: {getClientStageProbability(client.stage)}%

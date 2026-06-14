@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getSupabaseServer } from '@/lib/supabase/server'
+import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
 
 import { buildClientIntelligence } from '@/lib/scp/client-intelligence'
 
@@ -21,27 +21,29 @@ export default async function ScpDashboardPage() {
 
     if (!profile) notFound()
 
+    const organizationId = await getActiveOrganizationId(supabase, user.id)
+
     const { data: clients } = await supabase
         .from('clients')
         .select('*')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
 
     const { data: quotes } = await supabase
         .from('quotes')
         .select('*')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
 
     const { data: activities } = await supabase
         .from('client_activities')
         .select('*')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
 
     const { data: commercialMemories } = await supabase
         .from('commercial_memory')
         .select('*')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
 
     const safeClients = clients ?? []
     const safeQuotes = quotes ?? []
