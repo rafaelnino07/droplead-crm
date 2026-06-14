@@ -1,4 +1,5 @@
 import { generateText } from './anthropic-client'
+import { loadAIContext } from '../ai/context-loader'
 
 export type DealCoachInput = {
     client: {
@@ -40,8 +41,13 @@ Reglas estrictas:
 export async function generateDealCoach(input: DealCoachInput): Promise<string> {
     const prompt = buildPrompt(input)
 
+    const context = loadAIContext('deal-coach')
+    const enrichedSystem = context
+        ? `${SYSTEM_PROMPT}\n\n---\nMETODOLOGÍA Y CONTEXTO DEL NEGOCIO:\n${context}`
+        : SYSTEM_PROMPT
+
     return generateText({
-        system: SYSTEM_PROMPT,
+        system: enrichedSystem,
         prompt,
         maxTokens: 400,
     })

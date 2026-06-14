@@ -1,4 +1,5 @@
 import { generateText } from './anthropic-client'
+import { loadAIContext } from './context-loader'
 
 export type MorningBriefInput = {
     organizationName: string
@@ -52,8 +53,13 @@ Reglas estrictas:
 export async function generateMorningBrief(input: MorningBriefInput): Promise<string> {
     const prompt = buildPrompt(input)
 
+    const context = loadAIContext('morning-brief')
+    const enrichedSystem = context
+        ? `${SYSTEM_PROMPT}\n\n---\nMETODOLOGÍA Y CONTEXTO DEL NEGOCIO:\n${context}`
+        : SYSTEM_PROMPT
+
     return generateText({
-        system: SYSTEM_PROMPT,
+        system: enrichedSystem,
         prompt,
         maxTokens: 400,
     })

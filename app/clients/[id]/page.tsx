@@ -377,7 +377,9 @@ export default async function ClientDetailPage({
                                     <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">
                                         {DEAL_COACH_BLOCK_LABELS[index] ?? ''}
                                     </p>
-                                    <p className="mt-2 whitespace-pre-wrap text-neutral-200">{block.trim()}</p>
+                                    <p className="mt-2 whitespace-pre-wrap text-neutral-200">
+                                        {block.replace(/^\*\*[^*]+\*\*\n?/, '').trim()}
+                                    </p>
                                 </div>
                             ))}
 
