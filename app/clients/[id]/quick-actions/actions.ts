@@ -6,6 +6,20 @@ import { QUICK_ACTIONS } from '@/lib/scp/quick-actions'
 import { isMemoryAutoSyncAction, buildMemoryAutoSyncPatch } from '@/lib/scp/memory-auto-sync'
 import { getStageAutoSyncTarget, isTerminalStage } from '@/lib/scp/stage-auto-sync'
 import { getClientStageLabel } from '@/lib/scp/stages'
+import { createAutoTask } from '@/lib/tasks/create-auto-task'
+import type { AutoTaskTrigger } from '@/lib/tasks/auto-tasks'
+
+const QUICK_ACTION_TO_TRIGGER: Partial<Record<string, AutoTaskTrigger>> = {
+    call_completed: 'call_completed',
+    whatsapp_sent: 'whatsapp_sent',
+    meeting_completed: 'meeting_completed',
+    site_visit_completed: 'site_visit_completed',
+    no_response: 'no_response',
+    budget_confirmed: 'budget_confirmed',
+    plans_received: 'plans_received',
+    proposal_sent: 'proposal_sent',
+    verbal_acceptance: 'verbal_acceptance',
+}
 
 export async function addQuickAction(formData: FormData) {
     const clientId = formData.get('clientId') as string
@@ -143,6 +157,18 @@ export async function addQuickAction(formData: FormData) {
                 throw stageActivityError
             }
         }
+    }
+
+    const autoTrigger = QUICK_ACTION_TO_TRIGGER[actionType]
+
+    if (autoTrigger) {
+        await createAutoTask({
+            supabase,
+            organizationId: profile.organization_id,
+            clientId,
+            createdBy: user.id,
+            trigger: autoTrigger,
+        })
     }
 
     revalidatePath(`/clients/${clientId}`)

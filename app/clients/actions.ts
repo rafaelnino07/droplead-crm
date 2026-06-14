@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { getSupabaseServer } from '@/lib/supabase/server'
 import type { ClientType } from '@/lib/types/database'
+import { createAutoTask } from '@/lib/tasks/create-auto-task'
 
 export async function createClient(formData: FormData) {
     const supabase = await getSupabaseServer()
@@ -61,6 +62,14 @@ export async function createClient(formData: FormData) {
     if (activityError) {
         console.error('CLIENT ACTIVITY ERROR:', activityError)
     }
+
+    await createAutoTask({
+        supabase,
+        organizationId: profile.organization_id,
+        clientId: client.id,
+        createdBy: user.id,
+        trigger: 'client_created',
+    })
 
     redirect('/clients')
 }

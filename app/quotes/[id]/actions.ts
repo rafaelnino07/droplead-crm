@@ -3,6 +3,7 @@
 import { randomUUID } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { getSupabaseServer } from '@/lib/supabase/server'
+import { createAutoTask } from '@/lib/tasks/create-auto-task'
 
 async function getAuthorizedQuote(quoteId: string) {
     const supabase = await getSupabaseServer()
@@ -81,6 +82,14 @@ export async function markQuoteAsSent(quoteId: string) {
         }
     }
 
+    await createAutoTask({
+        supabase,
+        organizationId: profile.organization_id,
+        clientId: quote.client_id,
+        createdBy: user.id,
+        trigger: 'quote_sent',
+    })
+
     revalidateQuote(quoteId, quote.client_id)
 }
 
@@ -118,6 +127,14 @@ export async function markQuoteAsAccepted(quoteId: string) {
         }
     }
 
+    await createAutoTask({
+        supabase,
+        organizationId: profile.organization_id,
+        clientId: quote.client_id,
+        createdBy: user.id,
+        trigger: 'quote_accepted',
+    })
+
     revalidateQuote(quoteId, quote.client_id)
 }
 
@@ -154,6 +171,14 @@ export async function markQuoteAsRejected(quoteId: string) {
             console.error('QUOTE REJECTED ACTIVITY ERROR:', activityError)
         }
     }
+
+    await createAutoTask({
+        supabase,
+        organizationId: profile.organization_id,
+        clientId: quote.client_id,
+        createdBy: user.id,
+        trigger: 'quote_rejected',
+    })
 
     revalidateQuote(quoteId, quote.client_id)
 }

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { createAutoTask } from '@/lib/tasks/create-auto-task'
 import type { QuoteStatus } from '@/lib/types/database'
 
 const STATUS_LABELS: Record<QuoteStatus, string> = {
@@ -89,6 +90,14 @@ export default async function PublicQuotePage({
                 })
 
             if (activityError) console.error('QUOTE VIEWED ACTIVITY ERROR:', activityError)
+
+            await createAutoTask({
+                supabase,
+                organizationId: quote.organization_id,
+                clientId: quote.client_id,
+                createdBy: null,
+                trigger: 'quote_viewed',
+            })
         }
 
         displayStatus = 'viewed'
