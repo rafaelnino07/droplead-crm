@@ -418,25 +418,23 @@ export async function POST() {
     }
 
     for (const account of adAccounts) {
-
-        // TEMP: usar token del .env.local para debugging
-        const accessToken =
-            process.env.META_ACCESS_TOKEN ||
-            account.access_token_encrypted
+        const accessToken = account.access_token_encrypted
 
         if (!accessToken) {
             summary.errors.push(`Cuenta ${account.meta_account_id}: sin access token configurado`)
             continue
         }
 
+        const metaAccountId = account.meta_account_id.startsWith('act_')
+            ? account.meta_account_id
+            : `act_${account.meta_account_id}`
+
         try {
-
-
             await syncAdAccount({
                 supabase,
                 organizationId: profile.organization_id,
                 adAccountId: account.id,
-                metaAccountId: `act_${process.env.META_AD_ACCOUNT_ID}`,
+                metaAccountId,
                 accessToken,
                 summary,
             })
@@ -449,7 +447,7 @@ export async function POST() {
             summary.accounts_synced += 1
         } catch (error) {
             summary.errors.push(
-                `Cuenta act_${process.env.META_AD_ACCOUNT_ID}: ${error instanceof Error
+                `Cuenta ${metaAccountId}: ${error instanceof Error
                     ? error.message
                     : "Error desconocido"
                 }`
