@@ -38,6 +38,7 @@ type GraphAdCreative = {
     image_url?: string
     video_id?: string
     call_to_action_type?: string
+    permalink_url?: string
 }
 
 type GraphAd = {
@@ -200,7 +201,7 @@ async function syncAds({
         `/${metaAdSetId}/ads`,
         accessToken,
         {
-            fields: 'id,name,status,permalink_url,creative{title,body,image_url,video_id,call_to_action_type}',
+            fields: 'id,name,status,permalink_url,creative{title,body,image_url,video_id,call_to_action_type,permalink_url}',
             limit: '100',
         }
     )
@@ -224,7 +225,7 @@ async function syncAds({
                     image_url: ad.creative?.image_url ?? null,
                     video_url: videoUrl,
                     cta_type: ad.creative?.call_to_action_type ?? null,
-                    permalink_url: ad.permalink_url ?? null,
+                    permalink_url: ad.creative?.permalink_url ?? ad.permalink_url ?? null,
                 },
                 { onConflict: 'meta_ad_id' }
             )
@@ -454,7 +455,7 @@ export async function POST() {
                 }`
             )
         }
-
-        return NextResponse.json({ success: true, ...summary })
     }
+
+    return NextResponse.json({ success: true, ...summary })
 }
