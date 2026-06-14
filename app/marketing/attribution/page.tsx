@@ -105,8 +105,6 @@ export default async function AttributionPage() {
     .eq("source", "meta_ads")
     .order("created_at", { ascending: false });
 
-  if (clientsError) console.error("ATTRIBUTION CLIENTS ERROR:", clientsError);
-
   if (!clientsData || clientsData.length === 0) {
     return (
       <div className="p-8 max-w-[1400px]">

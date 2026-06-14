@@ -869,7 +869,13 @@ export default async function ClientDetailPage({
             </section>
 
             <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-8">
-                <h2 className="text-2xl font-bold">Quick Actions SCP</h2>
+                <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold">Quick Actions SCP</h2>
+
+                    <Link href="/settings/quick-actions" className="text-sm text-neutral-400 hover:text-white">
+                        Configurar →
+                    </Link>
+                </div>
 
                 <form action={addQuickAction} className="mt-6 space-y-6">
                     <input type="hidden" name="clientId" value={client.id} />

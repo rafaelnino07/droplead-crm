@@ -187,14 +187,6 @@ export default async function DashboardPage({
             .eq('is_read', false),
     ])
 
-    if (clientsError) console.error('DASHBOARD CLIENTS ERROR:', clientsError)
-    if (quotesError) console.error('DASHBOARD QUOTES ERROR:', quotesError)
-    if (activitiesError) console.error('DASHBOARD ACTIVITIES ERROR:', activitiesError)
-    if (tasksError) console.error('DASHBOARD TASKS ERROR:', tasksError)
-    if (pendingTasksError) console.error('DASHBOARD PENDING TASKS ERROR:', pendingTasksError)
-    if (notificationsError) console.error('DASHBOARD NOTIFICATIONS ERROR:', notificationsError)
-    if (unreadCountError) console.error('DASHBOARD UNREAD NOTIFICATIONS COUNT ERROR:', unreadCountError)
-
     const morningBrief = morningBriefData ?? null
 
     const pendingTasks = tasksData ?? []

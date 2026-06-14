@@ -33,8 +33,6 @@ export default async function TasksPage() {
         .eq('status', 'pending')
         .order('due_date', { ascending: true, nullsFirst: false })
 
-    if (error) console.error('TASKS ERROR:', error)
-
     const tasks = tasksData ?? []
 
     const clientIds = Array.from(

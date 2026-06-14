@@ -43,8 +43,6 @@ export default async function BranchesPage() {
             .not('branch_id', 'is', null),
     ])
 
-    if (error) console.error('BRANCHES ERROR:', error)
-
     const branches = branchesData ?? []
 
     const clientCountByBranch = new Map<string, number>()

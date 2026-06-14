@@ -74,8 +74,6 @@ export default async function AdsPage() {
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
 
-  if (adsError) console.error("META ADS ERROR:", adsError);
-
   if (!adsData || adsData.length === 0) {
     return (
       <div className="p-8 max-w-[1400px]">
@@ -107,8 +105,6 @@ export default async function AdsPage() {
     .select("ad_id, impressions, reach, clicks, spend, leads")
     .eq("organization_id", organizationId)
     .gte("date", startDateStr);
-
-  if (metricsError) console.error("META AD METRICS ERROR:", metricsError);
 
   const metricsByAd = new Map<string, { impressions: number; reach: number; clicks: number; spend: number; leads: number }>();
   for (const m of metricsData ?? []) {

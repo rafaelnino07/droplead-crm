@@ -55,10 +55,6 @@ export default async function ClientsPage({
 
     const { data: clients, error } = await clientsQuery.order('created_at', { ascending: false })
 
-    if (error) {
-        console.error('CLIENTS ERROR:', error)
-    }
-
     return (
         <>
         <ImpersonationBanner />

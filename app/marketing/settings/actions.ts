@@ -10,8 +10,6 @@ export async function saveMetaAdAccount(formData: FormData) {
     const metaAccountId = String(formData.get('meta_account_id') ?? '').trim()
     const accessToken = String(formData.get('access_token') ?? '').trim()
 
-    console.log('TOKEN LENGTH:', accessToken.trim().length)
-
     const {
         data: { user },
     } = await supabase.auth.getUser()

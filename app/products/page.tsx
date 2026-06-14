@@ -31,8 +31,6 @@ export default async function ProductsPage() {
         .order('times_used', { ascending: false })
         .order('name', { ascending: true })
 
-    if (error) console.error('PRODUCTS ERROR:', error)
-
     const products = activeData ?? []
 
     const { data: archivedData, error: archivedError } = await supabase
@@ -42,8 +40,6 @@ export default async function ProductsPage() {
         .eq('is_archived', true)
         .order('times_used', { ascending: false })
         .order('name', { ascending: true })
-
-    if (archivedError) console.error('ARCHIVED PRODUCTS ERROR:', archivedError)
 
     const archivedProducts = archivedData ?? []
 

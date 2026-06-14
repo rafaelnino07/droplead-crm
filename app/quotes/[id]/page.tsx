@@ -70,8 +70,6 @@ export default async function QuoteDetailPage({
         .eq('organization_id', organizationId)
         .maybeSingle()
 
-    if (error) console.error('QUOTE DETAIL ERROR:', error)
-
     if (!quote) notFound()
 
     const { data: itemsData, error: itemsError } = await supabase
@@ -79,8 +77,6 @@ export default async function QuoteDetailPage({
         .select('id, name, description, quantity, unit, unit_price, discount_pct, subtotal, sort_order')
         .eq('quote_id', quote.id)
         .order('sort_order', { ascending: true })
-
-    if (itemsError) console.error('QUOTE ITEMS ERROR:', itemsError)
 
     const quoteItems = itemsData ?? []
 

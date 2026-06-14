@@ -58,14 +58,7 @@ export default async function PrintQuotePage({
         .eq('id', params.id)
         .maybeSingle()
 
-    if (error) console.error('PRINT QUOTE ERROR:', error)
-
-    console.log('QUOTE FOUND:', quote?.id, 'QUOTE ORG:', quote?.organization_id)
-
-    if (!quote) {
-        console.error('PRINT QUOTE NOT FOUND:', { id: params.id, error })
-        notFound()
-    }
+    if (!quote) notFound()
 
     let organizationId: string | null = null
 
@@ -79,18 +72,9 @@ export default async function PrintQuotePage({
         if (!profile) redirect('/onboarding')
 
         organizationId = profile.organization_id
-
-        console.log('USER ORG:', profile.organization_id)
     }
 
-    if (organizationId && quote.organization_id !== organizationId) {
-        console.error('PRINT QUOTE ORG MISMATCH:', {
-            id: params.id,
-            quoteOrg: quote.organization_id,
-            userOrg: organizationId,
-        })
-        notFound()
-    }
+    if (organizationId && quote.organization_id !== organizationId) notFound()
 
     if (!user && !quote.share_token) {
         redirect('/login')
@@ -101,8 +85,6 @@ export default async function PrintQuotePage({
         .select('id, name, description, quantity, unit, unit_price, discount_pct, subtotal, sort_order')
         .eq('quote_id', quote.id)
         .order('sort_order', { ascending: true })
-
-    if (itemsError) console.error('PRINT QUOTE ITEMS ERROR:', itemsError)
 
     const quoteItems = itemsData ?? []
 

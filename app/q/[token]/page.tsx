@@ -60,8 +60,6 @@ export default async function PublicQuotePage({
         .eq('share_token', params.token)
         .maybeSingle()
 
-    if (error) console.error('PUBLIC QUOTE ERROR:', error)
-
     if (!quote) notFound()
 
     const { data: itemsData, error: itemsError } = await supabase
@@ -69,8 +67,6 @@ export default async function PublicQuotePage({
         .select('id, name, description, quantity, unit, unit_price, discount_pct, subtotal, sort_order')
         .eq('quote_id', quote.id)
         .order('sort_order', { ascending: true })
-
-    if (itemsError) console.error('PUBLIC QUOTE ITEMS ERROR:', itemsError)
 
     const quoteItems = itemsData ?? []
 

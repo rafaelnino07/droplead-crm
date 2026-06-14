@@ -113,9 +113,6 @@ export default async function MarketingOverview() {
         .eq("organization_id", organizationId),
     ]);
 
-  if (metricsError) console.error("META AD METRICS ERROR:", metricsError);
-  if (campaignsError) console.error("META CAMPAIGNS ERROR:", campaignsError);
-
   const metricRows = metrics ?? [];
 
   // ── KPIs: sum spend, sum leads, average CTR ──────────────────────
@@ -195,8 +192,6 @@ export default async function MarketingOverview() {
       });
 
       const data = await response.json();
-
-      console.log("META SYNC RESULT:", data);
 
       if (!response.ok) {
         alert(data.error || "Error al sincronizar Meta");

@@ -44,8 +44,6 @@ export async function register(formData: FormData) {
         )
     }
 
-    console.log('REGISTER DATA:', data)
-
     if (!data.session) {
         redirect(
             '/login?error=Usuario creado pero sin sesión activa'
