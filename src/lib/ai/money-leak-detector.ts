@@ -55,7 +55,7 @@ function toNumber(value: number | string | null | undefined): number {
     return Number.isNaN(parsed) ? 0 : parsed
 }
 
-function daysSince(date?: string | null): number | null {
+export function daysSince(date?: string | null): number | null {
     if (!date) return null
 
     const parsed = new Date(date)
@@ -68,7 +68,7 @@ function daysSince(date?: string | null): number | null {
     return Math.floor(diff / (1000 * 60 * 60 * 24))
 }
 
-function daysUntil(date?: string | null): number | null {
+export function daysUntil(date?: string | null): number | null {
     if (!date) return null
 
     const parsed = new Date(date)

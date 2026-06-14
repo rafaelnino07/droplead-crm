@@ -1,4 +1,4 @@
-import { getSupabaseServer } from '@/lib/supabase/server'
+import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
 import { SidebarNav } from './sidebar-nav'
 
 export async function Sidebar() {
@@ -9,6 +9,7 @@ export async function Sidebar() {
   } = await supabase.auth.getUser()
 
   let isSuperAdmin = false
+  let unreadNotifications = 0
 
   if (user) {
     const { data: superAdmin } = await supabase
@@ -18,7 +19,19 @@ export async function Sidebar() {
       .maybeSingle()
 
     isSuperAdmin = !!superAdmin
+
+    const organizationId = await getActiveOrganizationId(supabase, user.id)
+
+    if (organizationId) {
+      const { count } = await supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .eq('is_read', false)
+
+      unreadNotifications = count ?? 0
+    }
   }
 
-  return <SidebarNav isSuperAdmin={isSuperAdmin} />
+  return <SidebarNav isSuperAdmin={isSuperAdmin} unreadNotifications={unreadNotifications} />
 }

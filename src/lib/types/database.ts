@@ -338,6 +338,22 @@ export interface SuperAdmin {
     created_at: string
 }
 
+// ── Notification ─────────────────────────────────────────────────
+// Alertas y notificaciones generadas para el CRM
+
+export interface Notification {
+    id: string
+    organization_id: string
+    client_id: string | null
+    type: string
+    title: string
+    description: string
+    priority: 'Alta' | 'Media' | 'Baja'
+    is_read: boolean
+    metadata: Record<string, unknown>
+    created_at: string
+}
+
 // ═══════════════════════════════════════════════════════════════
 // JOINED / ENRICHED TYPES
 // Used in queries that join multiple tables
@@ -593,6 +609,25 @@ export type Database = {
                 Insert: Omit<SuperAdmin, 'id' | 'created_at'>
                 Update: never
                 Relationships: []
+            }
+            notifications: {
+                Row: WithIndex<Notification>
+                Insert: Omit<Notification, 'id' | 'created_at' | 'is_read' | 'priority' | 'metadata'> & {
+                    is_read?: boolean
+                    priority?: Notification['priority']
+                    metadata?: Record<string, unknown>
+                    created_at?: string
+                }
+                Update: Partial<Omit<Notification, 'id' | 'organization_id' | 'created_at'>>
+                Relationships: [
+                    {
+                        foreignKeyName: 'notifications_client_id_fkey'
+                        columns: ['client_id']
+                        isOneToOne: false
+                        referencedRelation: 'clients'
+                        referencedColumns: ['id']
+                    }
+                ]
             }
         }
         Views: {

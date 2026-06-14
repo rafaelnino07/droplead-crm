@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
 import { ImpersonationBanner } from '../components/admin/impersonation-banner'
 import { calculateMoneyRadar } from '@/lib/scoring/money-radar'
@@ -9,6 +10,7 @@ import { getClientStageLabel, getClientStageProbability, type ClientStage } from
 import { formatTaskDueDate, isTaskOverdue } from '../components/tasks/constants'
 import { AIActionButton } from '../components/ui/ai-action-button'
 import { BranchFilter } from '@/components/branches/branch-filter'
+import { NotificationBell, type NotificationWithClient } from '../components/notifications/notification-bell'
 import { refreshMorningBrief } from './actions'
 
 const OPEN_QUOTE_STATUSES = ['draft', 'sent', 'viewed']
@@ -93,6 +95,19 @@ export default async function DashboardPage({
     }
 
     const organizationId = await getActiveOrganizationId(supabase, user.id)
+
+    // Trigger notification generation (non-blocking)
+    const requestHeaders = headers()
+    const host = requestHeaders.get('host')
+    const protocol = requestHeaders.get('x-forwarded-proto') ?? 'http'
+    fetch(`${protocol}://${host}/api/notifications/generate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            cookie: requestHeaders.get('cookie') ?? '',
+        },
+    }).catch(() => {}) // ignore errors — notifications are best-effort
+
     const branchId = searchParams.branch_id
 
     const { data: branchesData } = await supabase
@@ -138,6 +153,8 @@ export default async function DashboardPage({
         { data: tasksData, error: tasksError },
         { data: morningBriefData },
         { data: pendingTasksData, error: pendingTasksError },
+        { data: notificationsData, error: notificationsError },
+        { count: unreadNotificationsCount, error: unreadCountError },
     ] = await Promise.all([
         clientsQuery,
         quotesQuery,
@@ -156,6 +173,18 @@ export default async function DashboardPage({
             .limit(1)
             .maybeSingle(),
         pendingTasksQuery,
+        supabase
+            .from('notifications')
+            .select('*')
+            .eq('organization_id', organizationId)
+            .eq('is_read', false)
+            .order('created_at', { ascending: false })
+            .limit(20),
+        supabase
+            .from('notifications')
+            .select('id', { count: 'exact', head: true })
+            .eq('organization_id', organizationId)
+            .eq('is_read', false),
     ])
 
     if (clientsError) console.error('DASHBOARD CLIENTS ERROR:', clientsError)
@@ -163,6 +192,8 @@ export default async function DashboardPage({
     if (activitiesError) console.error('DASHBOARD ACTIVITIES ERROR:', activitiesError)
     if (tasksError) console.error('DASHBOARD TASKS ERROR:', tasksError)
     if (pendingTasksError) console.error('DASHBOARD PENDING TASKS ERROR:', pendingTasksError)
+    if (notificationsError) console.error('DASHBOARD NOTIFICATIONS ERROR:', notificationsError)
+    if (unreadCountError) console.error('DASHBOARD UNREAD NOTIFICATIONS COUNT ERROR:', unreadCountError)
 
     const morningBrief = morningBriefData ?? null
 
@@ -274,7 +305,11 @@ export default async function DashboardPage({
     }
 
     const taskClientIds = pendingTasks.filter((t) => t.client_id).map((t) => t.client_id as string)
-    const clientIds = Array.from(new Set([...groupsByClient.keys(), ...taskClientIds]))
+    const unreadNotifications = notificationsData ?? []
+    const notificationClientIds = unreadNotifications
+        .filter((n) => n.client_id)
+        .map((n) => n.client_id as string)
+    const clientIds = Array.from(new Set([...groupsByClient.keys(), ...taskClientIds, ...notificationClientIds]))
 
     const { data: namedClients } =
         clientIds.length > 0
@@ -283,6 +318,11 @@ export default async function DashboardPage({
 
     const clientNameById = new Map((namedClients ?? []).map((c) => [c.id, c.name]))
     const clientById = new Map(clients.map((c) => [c.id, c]))
+
+    const notificationsWithClient: NotificationWithClient[] = unreadNotifications.map((notification) => ({
+        ...notification,
+        client_name: notification.client_id ? clientNameById.get(notification.client_id) ?? null : null,
+    }))
 
     const topActions = Array.from(groupsByClient.entries())
         .map(([clientId, group]) => {
@@ -340,6 +380,10 @@ export default async function DashboardPage({
                 <div className="flex items-center gap-3">
                     <span className="text-sm text-neutral-500">Sucursal</span>
                     <BranchFilter branches={branches} />
+                    <NotificationBell
+                        initialCount={unreadNotificationsCount ?? 0}
+                        initialNotifications={notificationsWithClient}
+                    />
                 </div>
             </div>
 

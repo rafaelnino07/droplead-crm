@@ -32,7 +32,13 @@ const sections: NavSection[] = [
   },
 ];
 
-export function SidebarNav({ isSuperAdmin }: { isSuperAdmin: boolean }) {
+export function SidebarNav({
+  isSuperAdmin,
+  unreadNotifications = 0,
+}: {
+  isSuperAdmin: boolean;
+  unreadNotifications?: number;
+}) {
   const pathname = usePathname();
 
   if (HIDDEN_ROUTES.includes(pathname) || pathname.startsWith("/q/") || pathname.endsWith("/print")) {
@@ -59,13 +65,18 @@ export function SidebarNav({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                     <Link
                       href={item.href}
                       className={cn(
-                        "block rounded-md px-2 py-2 text-sm transition",
+                        "flex items-center justify-between rounded-md px-2 py-2 text-sm transition",
                         active
                           ? "bg-neutral-800 text-white font-medium"
                           : "text-neutral-400 hover:bg-neutral-900 hover:text-white",
                       )}
                     >
-                      {item.label}
+                      <span>{item.label}</span>
+                      {item.href === "/dashboard" && unreadNotifications > 0 && (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                          {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
