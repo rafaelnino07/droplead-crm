@@ -147,6 +147,39 @@ export default async function ClientDetailPage({
         0
     )
 
+    const dealCoachBlocks = (dealCoachAdvice?.advice_text ?? '')
+        .split(/\n\s*\n/)
+        .filter((block) => block.trim().length > 0)
+        .map((block) => block.replace(/^\*\*[^*]+\*\*\n?/, '').trim())
+        .map((block, index, allBlocks) => {
+            const lines = block.split('\n')
+            const messageLines = lines.filter((line) => line.trim().startsWith('>'))
+            const mainLines = lines.filter((line) => !line.trim().startsWith('>'))
+
+            const isLast = index === allBlocks.length - 1
+            if (!isLast || messageLines.length === 0) {
+                return { mainText: block, messageText: '' }
+            }
+
+            const messageText = messageLines
+                .map((line) =>
+                    line
+                        .trim()
+                        .replace(/^>\s*/, '')
+                        .replace(/\*\*/g, '')
+                        .replace(/\*/g, '')
+                )
+                .filter(
+                    (line) =>
+                        !line.includes('Mensaje listo para copiar') &&
+                        !line.includes('Approach sugerido')
+                )
+                .join('\n')
+                .trim()
+
+            return { mainText: mainLines.join('\n').trim(), messageText }
+        })
+
     return (
         <main className="min-h-screen bg-black p-8 text-white">
             <Link href="/clients" className="text-neutral-400 hover:text-white">
@@ -368,19 +401,27 @@ export default async function ClientDetailPage({
                     </div>
                 ) : (
                     <div className="mt-8 space-y-4">
-                        {dealCoachAdvice.advice_text
-                            .split(/\n\s*\n/)
-                            .filter((block) => block.trim().length > 0)
-                            .map((block, index) => (
-                                <div key={index} className="rounded-xl bg-neutral-800 p-5">
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">
-                                        {DEAL_COACH_BLOCK_LABELS[index] ?? ''}
-                                    </p>
+                        {dealCoachBlocks.map((block, index) => (
+                            <div key={index} className="rounded-xl bg-neutral-800 p-5">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+                                    {DEAL_COACH_BLOCK_LABELS[index] ?? ''}
+                                </p>
+                                {block.mainText && (
                                     <p className="mt-2 whitespace-pre-wrap text-neutral-200">
-                                        {block.replace(/^\*\*[^*]+\*\*\n?/, '').trim()}
+                                        {block.mainText}
                                     </p>
-                                </div>
-                            ))}
+                                )}
+
+                                {block.messageText && (
+                                    <div className="mt-3 rounded-xl border border-neutral-700 bg-neutral-800 p-4">
+                                        <p className="mb-2 text-xs text-neutral-500">💬 Puedes decir algo así:</p>
+                                        <p className="whitespace-pre-wrap text-sm italic text-neutral-200">
+                                            {block.messageText}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
 
                         <p className="text-xs text-neutral-500">
                             Generado{' '}
