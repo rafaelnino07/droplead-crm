@@ -28,7 +28,7 @@ async function getAuthorizedQuote(quoteId: string) {
 
     const { data: quote } = await supabase
         .from('quotes')
-        .select('id, client_id, quote_number, share_token')
+        .select('id, client_id, quote_number, share_token, status, total')
         .eq('id', quoteId)
         .eq('organization_id', profile.organization_id)
         .maybeSingle()
@@ -125,6 +125,51 @@ export async function markQuoteAsAccepted(quoteId: string) {
         if (activityError) {
             console.error('QUOTE ACCEPTED ACTIVITY ERROR:', activityError)
         }
+
+        const { data: client } = await supabase
+            .from('clients')
+            .select('attributed_revenue, attributed_at')
+            .eq('id', quote.client_id)
+            .eq('organization_id', profile.organization_id)
+            .maybeSingle()
+
+        if (client) {
+            const quoteTotal = Number(quote.total)
+            const newAttributedRevenue = Number(client.attributed_revenue ?? 0) + quoteTotal
+
+            const { error: attributionError } = await supabase
+                .from('clients')
+                .update({
+                    attributed_revenue: newAttributedRevenue,
+                    attributed_at: client.attributed_at ?? new Date().toISOString(),
+                })
+                .eq('id', quote.client_id)
+                .eq('organization_id', profile.organization_id)
+
+            if (attributionError) {
+                console.error('CLIENT ATTRIBUTION ERROR:', attributionError)
+            } else {
+                const { error: revenueActivityError } = await supabase
+                    .from('client_activities')
+                    .insert({
+                        organization_id: profile.organization_id,
+                        client_id: quote.client_id,
+                        created_by: user.id,
+                        type: 'revenue_attributed',
+                        title: 'Ingreso atribuido',
+                        description: `Se atribuyó $${quoteTotal.toLocaleString('es-MX', { maximumFractionDigits: 0 })} a este cliente por cotización aceptada.`,
+                        metadata: {
+                            quote_id: quoteId,
+                            quote_total: quoteTotal,
+                            new_attributed_revenue: newAttributedRevenue,
+                        },
+                    })
+
+                if (revenueActivityError) {
+                    console.error('REVENUE ATTRIBUTION ACTIVITY ERROR:', revenueActivityError)
+                }
+            }
+        }
     }
 
     await createAutoTask({
@@ -140,6 +185,8 @@ export async function markQuoteAsAccepted(quoteId: string) {
 
 export async function markQuoteAsRejected(quoteId: string) {
     const { supabase, user, profile, quote } = await getAuthorizedQuote(quoteId)
+
+    const wasAccepted = quote.status === 'accepted'
 
     const { error: updateError } = await supabase
         .from('quotes')
@@ -169,6 +216,29 @@ export async function markQuoteAsRejected(quoteId: string) {
 
         if (activityError) {
             console.error('QUOTE REJECTED ACTIVITY ERROR:', activityError)
+        }
+
+        if (wasAccepted) {
+            const { data: client } = await supabase
+                .from('clients')
+                .select('attributed_revenue')
+                .eq('id', quote.client_id)
+                .eq('organization_id', profile.organization_id)
+                .maybeSingle()
+
+            if (client) {
+                const newAttributedRevenue = Math.max(0, Number(client.attributed_revenue ?? 0) - Number(quote.total))
+
+                const { error: attributionError } = await supabase
+                    .from('clients')
+                    .update({ attributed_revenue: newAttributedRevenue })
+                    .eq('id', quote.client_id)
+                    .eq('organization_id', profile.organization_id)
+
+                if (attributionError) {
+                    console.error('CLIENT ATTRIBUTION REVERSAL ERROR:', attributionError)
+                }
+            }
         }
     }
 

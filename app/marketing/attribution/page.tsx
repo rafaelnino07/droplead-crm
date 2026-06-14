@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { DollarSign, Users, CheckCircle2, Percent } from "lucide-react";
+import { DollarSign, Users, CheckCircle2, Percent, Target, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { calculateAttributionSummary } from "@/lib/attribution/engine";
 
 export const metadata = {
   title: "Atribución · Droplead",
@@ -40,6 +41,10 @@ function mapClientStageToJourney(stage: string | null): Stage {
     default:
       return "Nuevo";
   }
+}
+
+function formatCurrency(value: number): string {
+  return `$${value.toLocaleString("es-MX", { maximumFractionDigits: 0 })}`;
 }
 
 function StageBadge({ s }: { s: Stage }) {
@@ -95,7 +100,7 @@ export default async function AttributionPage() {
 
   const { data: clientsData, error: clientsError } = await supabase
     .from("clients")
-    .select("id, name, source_ad_id, stage, created_at")
+    .select("id, name, source_ad_id, stage, created_at, utm_campaign")
     .eq("organization_id", organizationId)
     .eq("source", "meta_ads")
     .order("created_at", { ascending: false });
@@ -125,7 +130,7 @@ export default async function AttributionPage() {
   const clientIds = clientsData.map((c) => c.id);
   const adIds = clientsData.map((c) => c.source_ad_id).filter((id): id is string => !!id);
 
-  const [{ data: adsData }, { data: quotesData }, { data: memoryData }] = await Promise.all([
+  const [{ data: adsData }, { data: quotesData }, { data: memoryData }, { data: campaignsData }, { data: allClientsData }] = await Promise.all([
     adIds.length > 0
       ? supabase
           .from("meta_ads")
@@ -136,13 +141,20 @@ export default async function AttributionPage() {
     supabase
       .from("quotes")
       .select("client_id, total, status")
-      .eq("organization_id", organizationId)
-      .in("client_id", clientIds),
+      .eq("organization_id", organizationId),
     supabase
       .from("commercial_memory")
       .select("client_id, estimated_budget")
       .eq("organization_id", organizationId)
       .in("client_id", clientIds),
+    supabase
+      .from("meta_campaigns")
+      .select("id, name, total_spend")
+      .eq("organization_id", organizationId),
+    supabase
+      .from("clients")
+      .select("id, stage, utm_campaign, source_ad_id")
+      .eq("organization_id", organizationId),
   ]);
 
   const adSetIds = (adsData ?? []).map((a) => a.ad_set_id).filter((id): id is string => !!id);
@@ -156,20 +168,15 @@ export default async function AttributionPage() {
           .in("id", adSetIds)
       : { data: [] as { id: string; campaign_id: string | null }[] };
 
-  const campaignIds = (adSetsData ?? []).map((a) => a.campaign_id).filter((id): id is string => !!id);
-
-  const { data: campaignsData } =
-    campaignIds.length > 0
-      ? await supabase
-          .from("meta_campaigns")
-          .select("id, name")
-          .eq("organization_id", organizationId)
-          .in("id", campaignIds)
-      : { data: [] as { id: string; name: string | null }[] };
-
   const adById = new Map((adsData ?? []).map((a) => [a.id, a]));
   const adSetToCampaign = new Map((adSetsData ?? []).map((a) => [a.id, a.campaign_id]));
   const campaignNameById = new Map((campaignsData ?? []).map((c) => [c.id, c.name ?? "Sin nombre"]));
+
+  const adToCampaign = new Map<string, string>();
+  for (const ad of adsData ?? []) {
+    const campaignId = ad.ad_set_id ? adSetToCampaign.get(ad.ad_set_id) : null;
+    if (campaignId) adToCampaign.set(ad.id, campaignId);
+  }
 
   const quotesByClient = new Map<string, number>();
   for (const q of quotesData ?? []) {
@@ -191,23 +198,41 @@ export default async function AttributionPage() {
       name: c.name,
       ad: ad?.headline ?? ad?.name ?? "Anuncio desconocido",
       campaign: campaignName,
+      utmCampaign: c.utm_campaign,
       date: c.created_at.slice(0, 10),
       stage: mapClientStageToJourney(rawStage),
       value: dealValue,
     };
   });
 
-  // ── Summary KPIs ──────────────────────────────────────────────────
-  const totalLeads = clientsData.length;
-  const totalWon = clientsData.filter((c) => (c.stage as string | null) === "proyecto_cerrado").length;
-  const conversionRate = totalLeads > 0 ? (totalWon / totalLeads) * 100 : 0;
-  const totalRevenue = leads.reduce((sum, l) => sum + l.value, 0);
+  // ── Attribution summary (CAC / ROAS / por campaña) ─────────────────
+  const attribution = calculateAttributionSummary({
+    clients: (allClientsData ?? []).map((c) => ({
+      id: c.id,
+      stage: c.stage as string | null,
+      utm_campaign: c.utm_campaign,
+      source_ad_id: c.source_ad_id,
+    })),
+    quotes: (quotesData ?? []).map((q) => ({
+      client_id: q.client_id,
+      total: Number(q.total),
+      status: q.status,
+    })),
+    campaigns: (campaignsData ?? []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      spend: Number(c.total_spend ?? 0),
+    })),
+    adToCampaign,
+  });
 
   const summary = [
-    { label: "Leads totales", value: totalLeads.toLocaleString("es-MX"), icon: Users, accent: "from-indigo-500 to-violet-600" },
-    { label: "Cerrados (Ganados)", value: totalWon.toLocaleString("es-MX"), icon: CheckCircle2, accent: "from-emerald-500 to-teal-600" },
-    { label: "Tasa de conversión", value: `${conversionRate.toFixed(1)}%`, icon: Percent, accent: "from-fuchsia-500 to-violet-600" },
-    { label: "Ingresos atribuidos", value: `$${totalRevenue.toLocaleString("es-MX", { maximumFractionDigits: 0 })}`, icon: DollarSign, accent: "from-amber-500 to-orange-600" },
+    { label: "Leads totales", value: attribution.totalLeads.toLocaleString("es-MX"), icon: Users, accent: "from-indigo-500 to-violet-600" },
+    { label: "Cerrados (Ganados)", value: attribution.totalWon.toLocaleString("es-MX"), icon: CheckCircle2, accent: "from-emerald-500 to-teal-600" },
+    { label: "Tasa de conversión", value: `${attribution.conversionRate.toFixed(1)}%`, icon: Percent, accent: "from-fuchsia-500 to-violet-600" },
+    { label: "Ingresos atribuidos", value: formatCurrency(attribution.totalRevenue), icon: DollarSign, accent: "from-amber-500 to-orange-600" },
+    { label: "CAC real", value: attribution.cac > 0 ? formatCurrency(attribution.cac) : "—", icon: Target, accent: "from-rose-500 to-pink-600" },
+    { label: "ROAS real", value: attribution.roas > 0 ? `${attribution.roas.toFixed(1)}x` : "—", icon: TrendingUp, accent: "from-cyan-500 to-blue-600" },
   ];
 
   return (
@@ -220,7 +245,7 @@ export default async function AttributionPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         {summary.map((s) => (
           <div key={s.label} className="rounded-2xl glass-card p-5 relative overflow-hidden">
             <div className={cn("absolute -top-10 -right-10 size-28 rounded-full blur-2xl opacity-40 bg-gradient-to-br", s.accent)} />
@@ -233,6 +258,51 @@ export default async function AttributionPage() {
         ))}
       </div>
 
+      {attribution.byCampaign.length > 0 && (
+        <div className="rounded-2xl glass-card overflow-hidden">
+          <div className="p-6 pb-4">
+            <h2 className="text-lg font-semibold tracking-tight">Por campaña</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">Rendimiento de adquisición por campaña de Meta Ads</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[800px]">
+              <thead>
+                <tr className="text-xs uppercase tracking-wider text-muted-foreground border-y border-border/60 bg-secondary/20">
+                  <th className="text-left font-medium px-6 py-3">Campaña</th>
+                  <th className="text-right font-medium px-3 py-3">Leads</th>
+                  <th className="text-right font-medium px-3 py-3">Ganados</th>
+                  <th className="text-right font-medium px-3 py-3">Ingresos</th>
+                  <th className="text-right font-medium px-3 py-3">Inversión</th>
+                  <th className="text-right font-medium px-3 py-3">CAC</th>
+                  <th className="text-right font-medium px-6 py-3">ROAS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {attribution.byCampaign.map((c) => (
+                  <tr key={c.campaignId} className="border-b border-border/40 hover:bg-secondary/20 transition last:border-b-0">
+                    <td className="px-6 py-4 font-medium">{c.campaignName}</td>
+                    <td className="px-3 py-4 text-right tabular-nums">{c.leads}</td>
+                    <td className="px-3 py-4 text-right tabular-nums">{c.won}</td>
+                    <td className="px-3 py-4 text-right tabular-nums">
+                      {c.revenue > 0 ? formatCurrency(c.revenue) : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="px-3 py-4 text-right tabular-nums">
+                      {c.spend > 0 ? formatCurrency(c.spend) : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="px-3 py-4 text-right tabular-nums">
+                      {c.cac > 0 ? formatCurrency(c.cac) : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="px-6 py-4 text-right tabular-nums">
+                      {c.roas > 0 ? `${c.roas.toFixed(1)}x` : <span className="text-muted-foreground">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-2xl glass-card overflow-hidden">
         <div className="p-6 pb-4 flex items-center justify-between">
           <div>
@@ -242,12 +312,13 @@ export default async function AttributionPage() {
           <button className="text-xs text-muted-foreground hover:text-foreground transition">Exportar CSV →</button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[900px]">
+          <table className="w-full text-sm min-w-[1000px]">
             <thead>
               <tr className="text-xs uppercase tracking-wider text-muted-foreground border-y border-border/60 bg-secondary/20">
                 <th className="text-left font-medium px-6 py-3">Cliente</th>
                 <th className="text-left font-medium px-3 py-3">Anuncio origen</th>
                 <th className="text-left font-medium px-3 py-3">Campaña</th>
+                <th className="text-left font-medium px-3 py-3">UTM Campaign</th>
                 <th className="text-left font-medium px-3 py-3">Fecha de ingreso</th>
                 <th className="text-left font-medium px-3 py-3">Etapa actual</th>
                 <th className="text-left font-medium px-3 py-3">Recorrido</th>
@@ -267,11 +338,14 @@ export default async function AttributionPage() {
                   </td>
                   <td className="px-3 py-4 text-muted-foreground max-w-[200px] truncate">{l.ad}</td>
                   <td className="px-3 py-4 text-muted-foreground">{l.campaign}</td>
+                  <td className="px-3 py-4 text-muted-foreground">
+                    {l.utmCampaign ?? <span className="text-muted-foreground/50">—</span>}
+                  </td>
                   <td className="px-3 py-4 text-muted-foreground tabular-nums">{l.date}</td>
                   <td className="px-3 py-4"><StageBadge s={l.stage} /></td>
                   <td className="px-3 py-4"><StageJourney s={l.stage} /></td>
                   <td className="px-6 py-4 text-right tabular-nums font-medium">
-                    {l.value > 0 ? `$${l.value.toLocaleString("es-MX", { maximumFractionDigits: 0 })}` : <span className="text-muted-foreground">—</span>}
+                    {l.value > 0 ? formatCurrency(l.value) : <span className="text-muted-foreground">—</span>}
                   </td>
                 </tr>
               ))}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { createAutoTask } from '@/lib/tasks/create-auto-task'
 
 const leadPayloadSchema = z.object({
     meta_ad_id: z.string().min(1),
@@ -8,6 +9,11 @@ const leadPayloadSchema = z.object({
     email: z.string().email().optional(),
     phone: z.string().optional(),
     company: z.string().optional(),
+    utm_source: z.string().optional(),
+    utm_campaign: z.string().optional(),
+    utm_content: z.string().optional(),
+    utm_term: z.string().optional(),
+    utm_medium: z.string().optional(),
 })
 
 export async function POST(request: Request) {
@@ -31,7 +37,7 @@ export async function POST(request: Request) {
         )
     }
 
-    const { meta_ad_id, name, email, phone, company } = parsed.data
+    const { meta_ad_id, name, email, phone, company, utm_source, utm_campaign, utm_content, utm_term, utm_medium } = parsed.data
 
     const supabase = getSupabaseAdmin()
 
@@ -65,6 +71,13 @@ export async function POST(request: Request) {
             source: 'meta_ads',
             source_ad_id: ad.id,
             is_active: true,
+            utm_source: utm_source ?? null,
+            utm_campaign: utm_campaign ?? null,
+            utm_content: utm_content ?? null,
+            utm_term: utm_term ?? null,
+            utm_medium: utm_medium ?? null,
+            attributed_revenue: 0,
+            attributed_at: null,
         })
         .select('id, name')
         .single()
@@ -75,6 +88,14 @@ export async function POST(request: Request) {
             { status: 500 }
         )
     }
+
+    await createAutoTask({
+        supabase,
+        organizationId: ad.organization_id,
+        clientId: client.id,
+        createdBy: null,
+        trigger: 'client_created',
+    })
 
     return NextResponse.json({ success: true, client_id: client.id })
 }

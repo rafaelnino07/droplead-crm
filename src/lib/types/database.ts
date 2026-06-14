@@ -95,6 +95,13 @@ export interface Client {
     source: string | null
     source_ad_id: string | null
     is_active: boolean
+    utm_source: string | null
+    utm_campaign: string | null
+    utm_content: string | null
+    utm_term: string | null
+    utm_medium: string | null
+    attributed_revenue: number
+    attributed_at: string | null
     created_at: string
     updated_at: string
 }
