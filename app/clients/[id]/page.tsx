@@ -17,7 +17,7 @@ import { calculatePipelineProgress } from '@/lib/scp/progress'
 import { FileUpload } from '@/components/files/file-upload'
 import { FileViewButton } from '@/components/files/file-view-button'
 import { getFileCategoryLabel } from '@/lib/files/categories'
-import { generateExecutiveSummary } from './memory/actions'
+import { generateExecutiveSummary, autoPopulateMemory } from './memory/actions'
 import { generateDealCoachAdvice } from './deal-coach/actions'
 import { addClientNote } from './notes/actions'
 import { addQuickAction } from './quick-actions/actions'
@@ -25,6 +25,7 @@ import { QUICK_ACTIONS, QUICK_ACTION_CATEGORIES } from '@/lib/scp/quick-actions'
 import { TaskCard } from '../../components/tasks/task-card'
 import { NewTaskForm } from '../../components/tasks/new-task-form'
 import { AIActionButton } from '../../components/ui/ai-action-button'
+import { ScoreBar } from '../../components/ui/score-bar'
 import { cn } from '@/lib/utils'
 
 const DEAL_COACH_BLOCK_LABELS = ['Situación', 'Riesgo', 'Acción exacta']
@@ -288,9 +289,10 @@ export default async function ClientDetailPage({
 
                         <div className="mt-5 h-3 w-full max-w-md rounded-full bg-neutral-800">
                             <div
-                                className="h-3 rounded-full bg-white"
+                                className="h-3 rounded-full"
                                 style={{
                                     width: `${pipelineProgress.percentage}%`,
+                                    backgroundColor: `hsl(${pipelineProgress.percentage * 1.2}, 80%, 45%)`,
                                 }}
                             />
                         </div>
@@ -369,7 +371,9 @@ export default async function ClientDetailPage({
 
             <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-8">
                 <p className="text-neutral-500">Momentum Comercial</p>
-                <h2 className="mt-2 text-5xl font-bold">{momentum.score}/100</h2>
+                <div className="mt-4 max-w-md">
+                    <ScoreBar score={momentum.score} />
+                </div>
                 <p className="mt-2 text-xl text-neutral-300">{momentum.level}</p>
 
                 <div className="mt-6 flex flex-wrap gap-2">
@@ -383,7 +387,9 @@ export default async function ClientDetailPage({
 
             <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-8">
                 <p className="text-neutral-500">SCP Health Score</p>
-                <h2 className="mt-2 text-5xl font-bold">{scpHealth.score}/100</h2>
+                <div className="mt-4 max-w-md">
+                    <ScoreBar score={scpHealth.score} />
+                </div>
                 <p className="mt-2 text-xl text-neutral-300">{scpHealth.level}</p>
 
                 <div className="mt-8 grid grid-cols-2 gap-6">
@@ -561,9 +567,21 @@ export default async function ClientDetailPage({
                         <h2 className="mt-2 text-3xl font-bold">
                             Inteligencia de la cuenta
                         </h2>
+                        <p className="mt-2 text-sm text-neutral-500">
+                            Algunos campos se actualizan automáticamente con la actividad del cliente
+                        </p>
                     </div>
 
                     <div className="flex items-center gap-3">
+                        <form action={autoPopulateMemory.bind(null, client.id)}>
+                            <button
+                                type="submit"
+                                className="rounded-lg border border-neutral-700 px-5 py-3 font-semibold text-white hover:bg-neutral-800"
+                            >
+                                Actualizar con datos del sistema
+                            </button>
+                        </form>
+
                         <form action={generateExecutiveSummary}>
                             <input type="hidden" name="clientId" value={client.id} />
 

@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { getSupabaseServer } from '@/lib/supabase/server'
+import { autoPopulateMemory } from '../memory/actions'
 
 function generateQuoteNumber() {
     const now = new Date()
@@ -131,6 +132,8 @@ export async function createQuote(clientId: string) {
     if (activityError) {
         console.error('QUOTE ACTIVITY ERROR:', activityError)
     }
+
+    await autoPopulateMemory(clientId)
 
     redirect(`/quotes/${quote.id}/edit`)
 }

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getSupabaseServer } from '@/lib/supabase/server'
 import { saveCommercialMemory } from './actions'
+import { FieldLabel } from './field-label'
 
 export default async function ClientMemoryPage({
     params,
@@ -109,9 +110,10 @@ export default async function ClientMemoryPage({
                         </div>
 
                         <div>
-                            <label className="text-sm text-neutral-400">
-                                Urgencia
-                            </label>
+                            <FieldLabel
+                                label="Urgencia"
+                                tooltip="¿Cuándo necesita el cliente iniciar o terminar el proyecto? Ej: 'Para diciembre', 'Lo antes posible'"
+                            />
                             <select
                                 name="urgency"
                                 defaultValue={memory?.urgency ?? ''}
@@ -126,9 +128,10 @@ export default async function ClientMemoryPage({
                         </div>
 
                         <div>
-                            <label className="text-sm text-neutral-400">
-                                Temperatura
-                            </label>
+                            <FieldLabel
+                                label="Temperatura"
+                                tooltip="¿Qué tan listo está para comprar? Frío=explorando, Tibio=comparando, Caliente=decidido, Muy caliente=urge cerrar"
+                            />
                             <select
                                 name="temperature"
                                 defaultValue={memory?.temperature ?? ''}
@@ -191,9 +194,10 @@ export default async function ClientMemoryPage({
 
                     <div className="mt-6 grid grid-cols-2 gap-6">
                         <div>
-                            <label className="text-sm text-neutral-400">
-                                Dolores detectados
-                            </label>
+                            <FieldLabel
+                                label="Dolores detectados"
+                                tooltip="¿Qué problema le está causando no tener esto resuelto? Ej: 'Pierde tiempo cotizando a mano', 'Sus clientes se van con la competencia'"
+                            />
                             <textarea
                                 name="pain_points"
                                 defaultValue={memory?.pain_points ?? ''}
@@ -204,9 +208,10 @@ export default async function ClientMemoryPage({
                         </div>
 
                         <div>
-                            <label className="text-sm text-neutral-400">
-                                Deseos detectados
-                            </label>
+                            <FieldLabel
+                                label="Deseos detectados"
+                                tooltip="¿Qué resultado ideal quiere lograr? Ej: 'Automatizar su casa', 'Tener control desde el celular'"
+                            />
                             <textarea
                                 name="desires"
                                 defaultValue={memory?.desires ?? ''}
@@ -217,9 +222,10 @@ export default async function ClientMemoryPage({
                         </div>
 
                         <div>
-                            <label className="text-sm text-neutral-400">
-                                Objeciones
-                            </label>
+                            <FieldLabel
+                                label="Objeciones"
+                                tooltip="¿Qué frena su decisión? Ej: 'El precio', 'Necesita consultarlo con su pareja', 'Ya trabajó con alguien que le falló'"
+                            />
                             <textarea
                                 name="objections"
                                 defaultValue={memory?.objections ?? ''}
@@ -230,9 +236,10 @@ export default async function ClientMemoryPage({
                         </div>
 
                         <div>
-                            <label className="text-sm text-neutral-400">
-                                Competidores mencionados
-                            </label>
+                            <FieldLabel
+                                label="Competidores mencionados"
+                                tooltip="¿Mencionó otras empresas que está evaluando? Escríbelas aquí"
+                            />
                             <textarea
                                 name="competitors"
                                 defaultValue={memory?.competitors ?? ''}
@@ -251,9 +258,10 @@ export default async function ClientMemoryPage({
 
                     <div className="mt-6 grid grid-cols-2 gap-6">
                         <div>
-                            <label className="text-sm text-neutral-400">
-                                Qué sigue
-                            </label>
+                            <FieldLabel
+                                label="Qué sigue"
+                                tooltip="¿Qué acordaron hacer después de esta conversación? Ej: 'Enviar cotización el lunes', 'Llamar el jueves'"
+                            />
                             <input
                                 name="next_step"
                                 defaultValue={memory?.next_step ?? ''}

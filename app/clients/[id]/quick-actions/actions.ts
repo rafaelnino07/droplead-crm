@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getSupabaseServer } from '@/lib/supabase/server'
 import { QUICK_ACTIONS } from '@/lib/scp/quick-actions'
 import { isMemoryAutoSyncAction, buildMemoryAutoSyncPatch } from '@/lib/scp/memory-auto-sync'
+import { autoPopulateMemory } from '../memory/actions'
 import { getStageAutoSyncTarget, isTerminalStage } from '@/lib/scp/stage-auto-sync'
 import { getClientStageLabel } from '@/lib/scp/stages'
 import { createAutoTask } from '@/lib/tasks/create-auto-task'
@@ -157,6 +158,10 @@ export async function addQuickAction(formData: FormData) {
                 throw stageActivityError
             }
         }
+    }
+
+    if (actionType === 'budget_confirmed' || actionType === 'plans_received') {
+        await autoPopulateMemory(clientId)
     }
 
     const autoTrigger = QUICK_ACTION_TO_TRIGGER[actionType]

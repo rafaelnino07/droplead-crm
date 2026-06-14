@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
 
 import { buildClientIntelligence } from '@/lib/scp/client-intelligence'
+import { ScoreBar } from '../components/ui/score-bar'
 
 export default async function ScpDashboardPage() {
     const supabase = await getSupabaseServer()
@@ -186,9 +187,9 @@ export default async function ScpDashboardPage() {
 
                 <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-6">
                     <p className="text-neutral-400">SCP Health promedio</p>
-                    <p className="mt-3 text-4xl font-bold">
-                        {averageScpHealth}/100
-                    </p>
+                    <div className="mt-4">
+                        <ScoreBar score={averageScpHealth} />
+                    </div>
                 </div>
 
                 <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-6">
@@ -313,9 +314,9 @@ export default async function ScpDashboardPage() {
                                         <p className="text-sm text-neutral-500">
                                             Momentum
                                         </p>
-                                        <p className="font-bold">
-                                            {item.momentum.score}/100
-                                        </p>
+                                        <div className="mt-2">
+                                            <ScoreBar score={item.momentum.score} />
+                                        </div>
                                     </div>
                                 </div>
                             </Link>
