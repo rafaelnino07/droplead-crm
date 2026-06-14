@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getSupabaseServer } from '@/lib/supabase/server'
 import { calculateMoneyRadar } from '@/lib/scoring/money-radar'
 import { calculateNextBestAction, type NextBestActionResult } from '@/lib/scoring/next-best-action'
+import { detectMoneyLeaks, type MoneyLeak } from '@/lib/ai/money-leak-detector'
 import { getClientStageLabel, getClientStageProbability, type ClientStage } from '@/lib/scp/stages'
 import { formatTaskDueDate, isTaskOverdue } from '../components/tasks/constants'
 import { AIActionButton } from '../components/ui/ai-action-button'
@@ -52,6 +53,18 @@ const PRIORITY_ORDER: Record<NextBestActionResult['priority'], number> = {
     Baja: 2,
 }
 
+const LEAK_SEVERITY_CLASSES: Record<MoneyLeak['severity'], string> = {
+    critical: 'bg-red-950 text-red-300 border border-red-900',
+    warning: 'bg-amber-950 text-amber-300 border border-amber-900',
+    info: 'bg-neutral-800 text-neutral-300 border border-neutral-700',
+}
+
+const LEAK_SEVERITY_LABELS: Record<MoneyLeak['severity'], string> = {
+    critical: 'Crítico',
+    warning: 'Atención',
+    info: 'Info',
+}
+
 export default async function DashboardPage() {
     const supabase = await getSupabaseServer()
 
@@ -85,6 +98,7 @@ export default async function DashboardPage() {
         { data: activitiesData, error: activitiesError },
         { data: tasksData, error: tasksError },
         { data: morningBriefData },
+        { data: pendingTasksData, error: pendingTasksError },
     ] = await Promise.all([
         supabase.from('clients').select('id, name, stage').eq('organization_id', organizationId),
         supabase
@@ -111,12 +125,18 @@ export default async function DashboardPage() {
             .order('generated_at', { ascending: false })
             .limit(1)
             .maybeSingle(),
+        supabase
+            .from('tasks')
+            .select('client_id, status, due_date')
+            .eq('organization_id', organizationId)
+            .eq('status', 'pending'),
     ])
 
     if (clientsError) console.error('DASHBOARD CLIENTS ERROR:', clientsError)
     if (quotesError) console.error('DASHBOARD QUOTES ERROR:', quotesError)
     if (activitiesError) console.error('DASHBOARD ACTIVITIES ERROR:', activitiesError)
     if (tasksError) console.error('DASHBOARD TASKS ERROR:', tasksError)
+    if (pendingTasksError) console.error('DASHBOARD PENDING TASKS ERROR:', pendingTasksError)
 
     const morningBrief = morningBriefData ?? null
 
@@ -151,6 +171,16 @@ export default async function DashboardPage() {
 
     // ── Pipeline Snapshot ─────────────────────────────────────────────
     const clients = clientsData ?? []
+
+    // ── Money Leak Detector ───────────────────────────────────────────
+    const moneyLeakReport = detectMoneyLeaks({
+        clients: clients.map((c) => ({ id: c.id, name: c.name, stage: (c.stage as string | null) ?? null })),
+        quotes: allQuotes,
+        activities: allActivities,
+        tasks: pendingTasksData ?? [],
+    })
+
+    const topLeaks = moneyLeakReport.leaks.slice(0, 5)
 
     const pipelineStats = new Map<
         ClientStage,
@@ -331,6 +361,50 @@ export default async function DashboardPage() {
                         </div>
                     ))}
                 </div>
+            </section>
+
+            <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-5">
+                <h2 className="text-lg font-semibold">🔍 Money Leak Detector</h2>
+
+                {moneyLeakReport.totalAtRisk > 0 && (
+                    <div className="mt-4 rounded-xl border border-red-900 bg-red-950 p-4">
+                        <p className="font-semibold text-red-300">
+                            ⚠️ ${moneyLeakReport.totalAtRisk.toLocaleString('es-MX', { maximumFractionDigits: 0 })} en riesgo detectado
+                        </p>
+                    </div>
+                )}
+
+                {topLeaks.length === 0 ? (
+                    <div className="mt-4 rounded-xl border border-emerald-900 bg-emerald-950 p-4">
+                        <p className="font-semibold text-emerald-300">✅ Sin fugas detectadas</p>
+                    </div>
+                ) : (
+                    <div className="mt-4 space-y-3">
+                        {topLeaks.map((leak, index) => (
+                            <Link
+                                key={`${leak.clientId}-${leak.type}-${index}`}
+                                href={`/clients/${leak.clientId}`}
+                                className="block rounded-xl border border-neutral-800 bg-neutral-900 p-4 transition-colors hover:border-neutral-700"
+                            >
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${LEAK_SEVERITY_CLASSES[leak.severity]}`}>
+                                            {LEAK_SEVERITY_LABELS[leak.severity]}
+                                        </span>
+                                        <p className="font-semibold text-white">{leak.clientName}</p>
+                                    </div>
+                                    {leak.amount > 0 && (
+                                        <p className="text-sm font-semibold text-neutral-300">
+                                            ${leak.amount.toLocaleString('es-MX', { maximumFractionDigits: 0 })}
+                                        </p>
+                                    )}
+                                </div>
+                                <p className="mt-2 text-sm text-neutral-300">{leak.message}</p>
+                                <p className="mt-1 text-xs text-neutral-500">{leak.action}</p>
+                            </Link>
+                        ))}
+                    </div>
+                )}
             </section>
 
             <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-5">
