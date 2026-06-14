@@ -217,7 +217,7 @@ async function syncAds({
             ad.permalink_url ??
             (ad.effective_object_story_id
                 ? `https://www.facebook.com/${ad.effective_object_story_id}`
-                : null)
+                : `https://www.facebook.com/ads/library/?id=${ad.id}`)
 
         const { data: adRow, error: adError } = await supabase
             .from('meta_ads')
