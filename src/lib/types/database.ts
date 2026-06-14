@@ -300,6 +300,17 @@ export interface MorningBrief {
     generated_at: string
 }
 
+// ── Deal Coach Cache ─────────────────────────────────────────────
+// Deal Coach — consejo comercial por cliente generado por IA
+
+export interface DealCoachCache {
+    id: string
+    organization_id: string
+    client_id: string
+    advice_text: string
+    generated_at: string
+}
+
 // ═══════════════════════════════════════════════════════════════
 // JOINED / ENRICHED TYPES
 // Used in queries that join multiple tables
@@ -523,6 +534,20 @@ export type Database = {
                 Insert: Omit<MorningBrief, 'id' | 'generated_at'> & { generated_at?: string }
                 Update: Partial<Omit<MorningBrief, 'id' | 'organization_id'>>
                 Relationships: []
+            }
+            deal_coach_cache: {
+                Row: WithIndex<DealCoachCache>
+                Insert: Omit<DealCoachCache, 'id' | 'generated_at'> & { generated_at?: string }
+                Update: Partial<Omit<DealCoachCache, 'id' | 'organization_id' | 'client_id'>>
+                Relationships: [
+                    {
+                        foreignKeyName: 'deal_coach_cache_client_id_fkey'
+                        columns: ['client_id']
+                        isOneToOne: true
+                        referencedRelation: 'clients'
+                        referencedColumns: ['id']
+                    }
+                ]
             }
         }
         Views: {

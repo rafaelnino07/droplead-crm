@@ -18,11 +18,14 @@ import { FileUpload } from '@/components/files/file-upload'
 import { FileViewButton } from '@/components/files/file-view-button'
 import { getFileCategoryLabel } from '@/lib/files/categories'
 import { generateExecutiveSummary } from './memory/actions'
+import { generateDealCoachAdvice } from './deal-coach/actions'
 import { addClientNote } from './notes/actions'
 import { addQuickAction } from './quick-actions/actions'
 import { QUICK_ACTIONS, QUICK_ACTION_CATEGORIES } from '@/lib/scp/quick-actions'
 import { TaskCard } from '../../components/tasks/task-card'
 import { NewTaskForm } from '../../components/tasks/new-task-form'
+
+const DEAL_COACH_BLOCK_LABELS = ['Situación', 'Riesgo', 'Acción exacta']
 
 export default async function ClientDetailPage({
     params,
@@ -73,6 +76,13 @@ export default async function ClientDetailPage({
     const { data: commercialMemory } = await supabase
         .from('commercial_memory')
         .select('*')
+        .eq('client_id', client.id)
+        .eq('organization_id', profile.organization_id)
+        .maybeSingle()
+
+    const { data: dealCoachAdvice } = await supabase
+        .from('deal_coach_cache')
+        .select('advice_text, generated_at')
         .eq('client_id', client.id)
         .eq('organization_id', profile.organization_id)
         .maybeSingle()
@@ -329,6 +339,59 @@ export default async function ClientDetailPage({
                         </p>
                     </div>
                 </div>
+            </section>
+
+            <section className="mt-8 rounded-xl border border-neutral-800 border-l-2 border-l-violet-500 bg-neutral-900 p-8">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-neutral-500">Deal Coach</p>
+                        <h2 className="mt-2 text-3xl font-bold">Consejo para esta cuenta</h2>
+                    </div>
+
+                    <form action={generateDealCoachAdvice}>
+                        <input type="hidden" name="clientId" value={client.id} />
+
+                        <button
+                            type="submit"
+                            className="rounded-lg border border-neutral-700 px-5 py-3 font-semibold text-white hover:bg-neutral-800"
+                        >
+                            {dealCoachAdvice ? 'Regenerar consejo' : 'Obtener consejo del Deal Coach'}
+                        </button>
+                    </form>
+                </div>
+
+                {!dealCoachAdvice ? (
+                    <div className="mt-8 rounded-xl bg-neutral-800 p-6">
+                        <p className="text-neutral-300">
+                            Obtén consejo específico sobre qué decir o hacer ahora con esta cuenta, generado por IA
+                            a partir del momentum, el radar de dinero y la memoria comercial.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="mt-8 space-y-4">
+                        {dealCoachAdvice.advice_text
+                            .split(/\n\s*\n/)
+                            .filter((block) => block.trim().length > 0)
+                            .map((block, index) => (
+                                <div key={index} className="rounded-xl bg-neutral-800 p-5">
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+                                        {DEAL_COACH_BLOCK_LABELS[index] ?? ''}
+                                    </p>
+                                    <p className="mt-2 whitespace-pre-wrap text-neutral-200">{block.trim()}</p>
+                                </div>
+                            ))}
+
+                        <p className="text-xs text-neutral-500">
+                            Generado{' '}
+                            {new Date(dealCoachAdvice.generated_at).toLocaleString('es-MX', {
+                                day: 'numeric',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                            })}
+                        </p>
+                    </div>
+                )}
             </section>
 
             <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-8">
