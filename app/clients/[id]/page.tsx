@@ -24,6 +24,7 @@ import { addQuickAction } from './quick-actions/actions'
 import { QUICK_ACTIONS, QUICK_ACTION_CATEGORIES } from '@/lib/scp/quick-actions'
 import { TaskCard } from '../../components/tasks/task-card'
 import { NewTaskForm } from '../../components/tasks/new-task-form'
+import { AIActionButton } from '../../components/ui/ai-action-button'
 
 const DEAL_COACH_BLOCK_LABELS = ['Situación', 'Riesgo', 'Acción exacta']
 
@@ -351,12 +352,10 @@ export default async function ClientDetailPage({
                     <form action={generateDealCoachAdvice}>
                         <input type="hidden" name="clientId" value={client.id} />
 
-                        <button
-                            type="submit"
+                        <AIActionButton
+                            label={dealCoachAdvice ? 'Regenerar consejo' : 'Obtener consejo del Deal Coach'}
                             className="rounded-lg border border-neutral-700 px-5 py-3 font-semibold text-white hover:bg-neutral-800"
-                        >
-                            {dealCoachAdvice ? 'Regenerar consejo' : 'Obtener consejo del Deal Coach'}
-                        </button>
+                        />
                     </form>
                 </div>
 
@@ -409,12 +408,10 @@ export default async function ClientDetailPage({
                         <form action={generateExecutiveSummary}>
                             <input type="hidden" name="clientId" value={client.id} />
 
-                            <button
-                                type="submit"
+                            <AIActionButton
+                                label="Generar resumen IA"
                                 className="rounded-lg border border-neutral-700 px-5 py-3 font-semibold text-white hover:bg-neutral-800"
-                            >
-                                Generar resumen IA
-                            </button>
+                            />
                         </form>
 
                         <Link

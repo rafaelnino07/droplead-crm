@@ -5,6 +5,7 @@ import { calculateMoneyRadar } from '@/lib/scoring/money-radar'
 import { calculateNextBestAction, type NextBestActionResult } from '@/lib/scoring/next-best-action'
 import { getClientStageLabel, getClientStageProbability, type ClientStage } from '@/lib/scp/stages'
 import { formatTaskDueDate, isTaskOverdue } from '../components/tasks/constants'
+import { AIActionButton } from '../components/ui/ai-action-button'
 import { refreshMorningBrief } from './actions'
 
 const OPEN_QUOTE_STATUSES = ['draft', 'sent', 'viewed']
@@ -282,12 +283,10 @@ export default async function DashboardPage() {
                     <h2 className="text-lg font-semibold">CEO Morning Brief</h2>
                     <form action={refreshMorningBrief}>
                         <input type="hidden" name="organization_id" value={organizationId} />
-                        <button
-                            type="submit"
+                        <AIActionButton
+                            label={morningBrief ? 'Regenerar brief' : 'Generar CEO Brief'}
                             className="rounded-lg border border-neutral-700 px-3 py-1.5 text-sm font-medium text-neutral-300 transition-colors hover:border-neutral-600 hover:text-white"
-                        >
-                            {morningBrief ? 'Regenerar brief' : 'Generar CEO Brief'}
-                        </button>
+                        />
                     </form>
                 </div>
 
