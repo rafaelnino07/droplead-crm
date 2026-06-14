@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseServer } from '@/lib/supabase/server'
 
-const META_API_VERSION = process.env.META_GRAPH_API_VERSION || 'v21.0'
+const META_API_VERSION = process.env.META_API_VERSION || 'v21.0'
 const META_GRAPH_BASE = `https://graph.facebook.com/${META_API_VERSION}`
 const METRICS_DATE_PRESET = 'last_30d'
 
@@ -325,16 +325,11 @@ async function syncAdAccount({
         accessToken,
         {
             fields: 'id,name,status,objective,daily_budget,lifetime_budget',
-            filtering: JSON.stringify([
-                {
-                    field: 'effective_status',
-                    operator: 'IN',
-                    value: ['ACTIVE', 'PAUSED', 'DELETED', 'ARCHIVED', 'IN_PROCESS', 'WITH_ISSUES'],
-                },
-            ]),
             limit: '100',
         }
     )
+
+
 
     for (const campaign of campaignsResponse.data ?? []) {
         const totalSpend = await getCampaignSpend(campaign.id, accessToken)
@@ -422,7 +417,11 @@ export async function POST() {
     }
 
     for (const account of adAccounts) {
-        const accessToken = account.access_token_encrypted
+
+        // TEMP: usar token del .env.local para debugging
+        const accessToken =
+            process.env.META_ACCESS_TOKEN ||
+            account.access_token_encrypted
 
         if (!accessToken) {
             summary.errors.push(`Cuenta ${account.meta_account_id}: sin access token configurado`)
@@ -430,11 +429,13 @@ export async function POST() {
         }
 
         try {
+
+
             await syncAdAccount({
                 supabase,
                 organizationId: profile.organization_id,
                 adAccountId: account.id,
-                metaAccountId: account.meta_account_id,
+                metaAccountId: `act_${process.env.META_AD_ACCOUNT_ID}`,
                 accessToken,
                 summary,
             })
@@ -447,10 +448,13 @@ export async function POST() {
             summary.accounts_synced += 1
         } catch (error) {
             summary.errors.push(
-                `Cuenta ${account.meta_account_id}: ${error instanceof Error ? error.message : 'Error desconocido'}`
+                `Cuenta act_${process.env.META_AD_ACCOUNT_ID}: ${error instanceof Error
+                    ? error.message
+                    : "Error desconocido"
+                }`
             )
         }
-    }
 
-    return NextResponse.json({ success: true, ...summary })
+        return NextResponse.json({ success: true, ...summary })
+    }
 }

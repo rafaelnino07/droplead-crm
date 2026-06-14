@@ -18,6 +18,7 @@ const sections: NavSection[] = [
       { label: "Clientes", href: "/clients" },
       { label: "Productos", href: "/products" },
       { label: "Tareas", href: "/tasks" },
+      { label: "Sucursales", href: "/branches" },
     ],
   },
   {

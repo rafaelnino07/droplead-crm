@@ -1,3 +1,4 @@
+import { SyncMetaButton } from "./sync-meta-button";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -186,7 +187,34 @@ export default async function MarketingOverview() {
     leads: leadsByCampaign.get(c.id) ?? 0,
     roas: 0,
   }));
+  async function handleSync() {
+    try {
+      const response = await fetch("/api/meta/sync", {
+        method: "POST",
+      });
 
+      const data = await response.json();
+
+      console.log("META SYNC RESULT:", data);
+
+      if (!response.ok) {
+        alert(data.error || "Error al sincronizar Meta");
+        return;
+      }
+
+      alert(
+        `Sincronización completada.
+Campañas: ${data.campaigns}
+Ads: ${data.ads}`
+      );
+
+      window.location.reload();
+
+    } catch (error) {
+      console.error(error);
+      alert("Ocurrió un error al sincronizar.");
+    }
+  }
   return (
     <div className="p-8 space-y-8 max-w-[1400px]">
       <div className="flex items-end justify-between flex-wrap gap-4">
@@ -201,9 +229,7 @@ export default async function MarketingOverview() {
           <button className="h-9 px-4 rounded-lg border border-border bg-secondary/40 text-sm hover:bg-secondary transition">
             Últimos 30 días
           </button>
-          <button className="h-9 px-4 rounded-lg gradient-primary text-sm font-medium text-white shadow-lg shadow-indigo-500/25 hover:opacity-95 transition">
-            Sincronizar ahora
-          </button>
+          <SyncMetaButton />
         </div>
       </div>
 

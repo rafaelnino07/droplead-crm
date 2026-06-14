@@ -62,6 +62,20 @@ export interface Organization {
     updated_at: string
 }
 
+// ── Branch ───────────────────────────────────────────────────────
+
+export interface Branch {
+    id: string
+    organization_id: string
+    name: string
+    city: string | null
+    address: string | null
+    phone: string | null
+    is_active: boolean
+    created_at: string
+    updated_at: string
+}
+
 // ── Profile ──────────────────────────────────────────────────────
 
 export interface Profile {
@@ -83,6 +97,7 @@ export interface Profile {
 export interface Client {
     id: string
     organization_id: string
+    branch_id: string | null
     name: string
     client_type: ClientType
     company: string | null
@@ -132,6 +147,7 @@ export interface Product {
 export interface Quote {
     id: string
     organization_id: string
+    branch_id: string | null
     client_id: string | null
     created_by: string | null
 
@@ -278,6 +294,7 @@ export interface ClientFile {
 export interface Task {
     id: string
     organization_id: string
+    branch_id: string | null
     client_id: string | null
     created_by: string | null
     title: string
@@ -310,6 +327,15 @@ export interface DealCoachCache {
     client_id: string
     advice_text: string
     generated_at: string
+}
+
+// ── Super Admin ──────────────────────────────────────────────────
+// Acceso global de plataforma (fuera del scope de organizations)
+
+export interface SuperAdmin {
+    id: string
+    user_id: string
+    created_at: string
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -436,8 +462,16 @@ export type Database = {
             }
             clients: {
                 Row: WithIndex<Client>
-                Insert: Omit<Client, 'id' | 'created_at' | 'updated_at'>
+                Insert: Omit<Client, 'id' | 'created_at' | 'updated_at' | 'branch_id'> & {
+                    branch_id?: string | null
+                }
                 Update: Partial<Omit<Client, 'id' | 'organization_id' | 'created_at'>>
+                Relationships: []
+            }
+            branches: {
+                Row: WithIndex<Branch>
+                Insert: Omit<Branch, 'id' | 'created_at' | 'updated_at'>
+                Update: Partial<Omit<Branch, 'id' | 'organization_id' | 'created_at'>>
                 Relationships: []
             }
             products: {
@@ -452,7 +486,9 @@ export type Database = {
             }
             quotes: {
                 Row: WithIndex<Quote>
-                Insert: Omit<Quote, 'id' | 'quote_number' | 'share_token' | 'view_count' | 'created_at' | 'updated_at'>
+                Insert: Omit<Quote, 'id' | 'quote_number' | 'share_token' | 'view_count' | 'created_at' | 'updated_at' | 'branch_id'> & {
+                    branch_id?: string | null
+                }
                 Update: Partial<Omit<Quote, 'id' | 'organization_id' | 'created_at'>>
                 Relationships: [
                     {
@@ -496,7 +532,9 @@ export type Database = {
             }
             tasks: {
                 Row: WithIndex<Task>
-                Insert: Omit<Task, 'id' | 'created_at' | 'updated_at'>
+                Insert: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'branch_id'> & {
+                    branch_id?: string | null
+                }
                 Update: Partial<Omit<Task, 'id' | 'organization_id' | 'created_at'>>
                 Relationships: []
             }
@@ -549,6 +587,12 @@ export type Database = {
                         referencedColumns: ['id']
                     }
                 ]
+            }
+            super_admins: {
+                Row: WithIndex<SuperAdmin>
+                Insert: Omit<SuperAdmin, 'id' | 'created_at'>
+                Update: never
+                Relationships: []
             }
         }
         Views: {
