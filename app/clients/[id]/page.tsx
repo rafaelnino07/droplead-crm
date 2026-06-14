@@ -25,6 +25,7 @@ import { QUICK_ACTIONS, QUICK_ACTION_CATEGORIES } from '@/lib/scp/quick-actions'
 import { TaskCard } from '../../components/tasks/task-card'
 import { NewTaskForm } from '../../components/tasks/new-task-form'
 import { AIActionButton } from '../../components/ui/ai-action-button'
+import { cn } from '@/lib/utils'
 
 const DEAL_COACH_BLOCK_LABELS = ['Situación', 'Riesgo', 'Acción exacta']
 
@@ -247,8 +248,12 @@ export default async function ClientDetailPage({
 
                 <div className="mt-10 grid grid-cols-2 gap-10">
                     <div>
-                        <p className="text-neutral-500">Empresa</p>
-                        <p className="mt-2 text-2xl">{client.company || '-'}</p>
+                        {client.client_type !== 'persona' && client.company && (
+                            <>
+                                <p className="text-neutral-500">Empresa</p>
+                                <p className="mt-2 text-2xl">{client.company}</p>
+                            </>
+                        )}
 
                         <div className="mt-8">
                             <p className="text-neutral-500">Teléfono</p>
@@ -464,7 +469,16 @@ export default async function ClientDetailPage({
                 </div>
             </section>
 
-            <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-8">
+            <section
+                className={cn(
+                    'mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-8 border-l-4',
+                    {
+                        Alta: 'border-l-red-500',
+                        Media: 'border-l-amber-500',
+                        Baja: 'border-l-neutral-500',
+                    }[nextBestAction.priority]
+                )}
+            >
                 <div className="flex items-center justify-between">
                     <div>
                         <p className="text-neutral-500">Siguiente Mejor Acción</p>
@@ -475,9 +489,6 @@ export default async function ClientDetailPage({
                     <div className="text-right">
                         <p className="text-sm text-neutral-500">Prioridad</p>
                         <p className="mt-2 text-2xl font-bold">{nextBestAction.priority}</p>
-                        <p className="mt-2 text-sm uppercase tracking-wider text-neutral-500">
-                            {nextBestAction.actionType}
-                        </p>
                     </div>
                 </div>
             </section>
@@ -765,7 +776,7 @@ export default async function ClientDetailPage({
                     </div>
 
                     <div className="rounded-xl bg-neutral-800 p-6">
-                        <p className="text-neutral-400">Historial</p>
+                        <p className="text-neutral-400">Actividad comercial registrada</p>
                         <p className="mt-2 text-5xl font-bold">{safeActivities.length}</p>
                     </div>
 
@@ -951,10 +962,6 @@ export default async function ClientDetailPage({
                                 {activity.description && (
                                     <p className="mt-2 text-neutral-400">{activity.description}</p>
                                 )}
-
-                                <p className="mt-3 text-xs uppercase tracking-wider text-neutral-500">
-                                    {activity.type}
-                                </p>
                             </div>
                         ))}
                     </div>

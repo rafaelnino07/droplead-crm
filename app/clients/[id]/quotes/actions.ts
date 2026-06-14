@@ -10,6 +10,33 @@ function generateQuoteNumber() {
     return `Q-${timestamp}`
 }
 
+async function generateOrgQuoteNumber(
+    supabase: Awaited<ReturnType<typeof getSupabaseServer>>,
+    organizationId: string
+) {
+    const { data: org } = await supabase
+        .from('organizations')
+        .select('slug')
+        .eq('id', organizationId)
+        .maybeSingle()
+
+    if (!org?.slug) {
+        return null
+    }
+
+    const year = new Date().getFullYear()
+
+    const { count } = await supabase
+        .from('quotes')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .gte('created_at', `${year}-01-01T00:00:00.000Z`)
+
+    const sequential = ((count ?? 0) + 1).toString().padStart(3, '0')
+
+    return `${org.slug.slice(0, 3).toUpperCase()}-${year}-${sequential}`
+}
+
 export async function createQuote(clientId: string) {
     const supabase = await getSupabaseServer()
 
@@ -42,9 +69,14 @@ export async function createQuote(clientId: string) {
         redirect('/clients')
     }
 
-    const { data: quoteNumber } = await supabase.rpc('generate_quote_number', {
-        org_id: profile.organization_id,
-    })
+    let quoteNumber = await generateOrgQuoteNumber(supabase, profile.organization_id)
+
+    if (!quoteNumber) {
+        const { data: rpcQuoteNumber } = await supabase.rpc('generate_quote_number', {
+            org_id: profile.organization_id,
+        })
+        quoteNumber = rpcQuoteNumber ?? generateQuoteNumber()
+    }
 
     const { data: quote, error } = await supabase
         .from('quotes')
@@ -52,7 +84,7 @@ export async function createQuote(clientId: string) {
             organization_id: profile.organization_id,
             client_id: clientId,
             created_by: user.id,
-            quote_number: quoteNumber ?? generateQuoteNumber(),
+            quote_number: quoteNumber,
             version: 1,
             status: 'draft',
             project_name: '',

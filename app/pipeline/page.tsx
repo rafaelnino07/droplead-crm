@@ -111,9 +111,11 @@ export default async function PipelinePage() {
                                                 {client.name}
                                             </p>
 
-                                            <p className="mt-1 text-sm text-neutral-400">
-                                                {client.company || 'Sin empresa'}
-                                            </p>
+                                            {client.client_type !== 'persona' && client.company && (
+                                                <p className="mt-1 text-sm text-neutral-400">
+                                                    {client.company}
+                                                </p>
+                                            )}
 
                                             <p className="mt-3 text-xs text-neutral-500">
                                                 {client.email ?? 'Sin email'} ·{' '}
