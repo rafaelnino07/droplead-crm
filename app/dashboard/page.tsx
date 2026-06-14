@@ -5,6 +5,7 @@ import { calculateMoneyRadar } from '@/lib/scoring/money-radar'
 import { calculateNextBestAction, type NextBestActionResult } from '@/lib/scoring/next-best-action'
 import { getClientStageLabel, getClientStageProbability, type ClientStage } from '@/lib/scp/stages'
 import { formatTaskDueDate, isTaskOverdue } from '../components/tasks/constants'
+import { refreshMorningBrief } from './actions'
 
 const OPEN_QUOTE_STATUSES = ['draft', 'sent', 'viewed']
 
@@ -82,6 +83,7 @@ export default async function DashboardPage() {
         { data: quotesData, error: quotesError },
         { data: activitiesData, error: activitiesError },
         { data: tasksData, error: tasksError },
+        { data: morningBriefData },
     ] = await Promise.all([
         supabase.from('clients').select('id, name, stage').eq('organization_id', organizationId),
         supabase
@@ -101,12 +103,21 @@ export default async function DashboardPage() {
             .eq('status', 'pending')
             .order('due_date', { ascending: true, nullsFirst: false })
             .limit(3),
+        supabase
+            .from('morning_briefs')
+            .select('brief_text, generated_at')
+            .eq('organization_id', organizationId)
+            .order('generated_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
     ])
 
     if (clientsError) console.error('DASHBOARD CLIENTS ERROR:', clientsError)
     if (quotesError) console.error('DASHBOARD QUOTES ERROR:', quotesError)
     if (activitiesError) console.error('DASHBOARD ACTIVITIES ERROR:', activitiesError)
     if (tasksError) console.error('DASHBOARD TASKS ERROR:', tasksError)
+
+    const morningBrief = morningBriefData ?? null
 
     const pendingTasks = tasksData ?? []
 
@@ -265,6 +276,40 @@ export default async function DashboardPage() {
                 <p className="text-sm text-neutral-500">{dateLabel}</p>
                 <h1 className="mt-1 text-3xl font-bold">Buenos días, {firstName}</h1>
             </div>
+
+            <section className="mt-6 rounded-xl border border-neutral-800 bg-neutral-900 p-5">
+                <div className="flex items-center justify-between gap-4">
+                    <h2 className="text-lg font-semibold">CEO Morning Brief</h2>
+                    <form action={refreshMorningBrief}>
+                        <input type="hidden" name="organization_id" value={organizationId} />
+                        <button
+                            type="submit"
+                            className="rounded-lg border border-neutral-700 px-3 py-1.5 text-sm font-medium text-neutral-300 transition-colors hover:border-neutral-600 hover:text-white"
+                        >
+                            {morningBrief ? 'Regenerar brief' : 'Generar CEO Brief'}
+                        </button>
+                    </form>
+                </div>
+
+                {morningBrief ? (
+                    <>
+                        <p className="mt-4 text-sm leading-relaxed text-neutral-200">{morningBrief.brief_text}</p>
+                        <p className="mt-3 text-xs text-neutral-500">
+                            Generado{' '}
+                            {new Date(morningBrief.generated_at).toLocaleString('es-MX', {
+                                day: 'numeric',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                            })}
+                        </p>
+                    </>
+                ) : (
+                    <p className="mt-4 text-sm text-neutral-400">
+                        Tu resumen ejecutivo del día, generado por IA.
+                    </p>
+                )}
+            </section>
 
             <section className="mt-8 grid gap-4 md:grid-cols-4">
                 {stats.map((s) => (

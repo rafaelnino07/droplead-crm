@@ -290,6 +290,16 @@ export interface Task {
     updated_at: string
 }
 
+// ── Morning Brief ────────────────────────────────────────────────
+// CEO Morning Brief — resumen ejecutivo diario generado por IA
+
+export interface MorningBrief {
+    id: string
+    organization_id: string
+    brief_text: string
+    generated_at: string
+}
+
 // ═══════════════════════════════════════════════════════════════
 // JOINED / ENRICHED TYPES
 // Used in queries that join multiple tables
@@ -506,6 +516,12 @@ export type Database = {
                 Row: WithIndex<MetaAdMetric>
                 Insert: Omit<MetaAdMetric, 'id' | 'created_at'>
                 Update: Partial<Omit<MetaAdMetric, 'id' | 'organization_id' | 'created_at'>>
+                Relationships: []
+            }
+            morning_briefs: {
+                Row: WithIndex<MorningBrief>
+                Insert: Omit<MorningBrief, 'id' | 'generated_at'> & { generated_at?: string }
+                Update: Partial<Omit<MorningBrief, 'id' | 'organization_id'>>
                 Relationships: []
             }
         }
