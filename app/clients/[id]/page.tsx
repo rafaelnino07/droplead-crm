@@ -71,6 +71,39 @@ export default async function ClientDetailPage({
               .maybeSingle()
         : { data: null }
 
+    const sourceAdId = client.source === 'meta_ads' ? client.source_ad_id : null
+
+    const { data: sourceAd } = sourceAdId
+        ? await supabase
+              .from('meta_ads')
+              .select('id, ad_set_id, name, headline, body, image_url, permalink_url')
+              .eq('id', sourceAdId)
+              .eq('organization_id', organizationId)
+              .maybeSingle()
+        : { data: null }
+
+    let sourceCampaignName: string | null = null
+
+    if (sourceAd?.ad_set_id) {
+        const { data: adSet } = await supabase
+            .from('meta_ad_sets')
+            .select('campaign_id')
+            .eq('id', sourceAd.ad_set_id)
+            .eq('organization_id', organizationId)
+            .maybeSingle()
+
+        if (adSet?.campaign_id) {
+            const { data: campaign } = await supabase
+                .from('meta_campaigns')
+                .select('name')
+                .eq('id', adSet.campaign_id)
+                .eq('organization_id', organizationId)
+                .maybeSingle()
+
+            sourceCampaignName = campaign?.name ?? null
+        }
+    }
+
     const { data: quotes } = await supabase
         .from('quotes')
         .select('*')
@@ -271,6 +304,63 @@ export default async function ClientDetailPage({
                     </div>
                 </div>
             </section>
+
+            {sourceAdId && (
+                <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-5">
+                    <p className="text-sm text-neutral-500">Origen del lead</p>
+
+                    {sourceAd ? (
+                        <div className="mt-4 flex gap-4">
+                            {sourceAd.image_url ? (
+                                <img
+                                    src={sourceAd.image_url}
+                                    alt={sourceAd.name ?? 'Anuncio'}
+                                    className="h-20 w-20 rounded-lg object-cover"
+                                />
+                            ) : (
+                                <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-neutral-800 text-2xl font-bold text-neutral-500">
+                                    {(sourceAd.name ?? 'A').charAt(0).toUpperCase()}
+                                </div>
+                            )}
+
+                            <div>
+                                <p className="font-semibold text-sm">{sourceAd.name ?? 'Anuncio sin nombre'}</p>
+
+                                {sourceCampaignName && (
+                                    <p className="text-xs text-neutral-500">{sourceCampaignName}</p>
+                                )}
+
+                                <span className="mt-2 inline-flex items-center rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-xs text-violet-400">
+                                    Meta Ads
+                                </span>
+
+                                {sourceAd.permalink_url && (
+                                    <div className="mt-2">
+                                        <a
+                                            href={sourceAd.permalink_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-neutral-500 hover:text-white"
+                                        >
+                                            Ver anuncio →
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="mt-4 flex items-center gap-3">
+                            <span className="inline-flex items-center rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-xs text-violet-400">
+                                Meta Ads
+                            </span>
+
+                            {client.utm_campaign && (
+                                <p className="text-xs text-neutral-500">{client.utm_campaign}</p>
+                            )}
+                        </div>
+                    )}
+                </section>
+            )}
 
             <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-8">
                 <p className="text-neutral-500">Momentum Comercial</p>
