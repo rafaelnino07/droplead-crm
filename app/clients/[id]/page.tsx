@@ -21,7 +21,6 @@ import { generateExecutiveSummary, autoPopulateMemory } from './memory/actions'
 import { generateDealCoachAdvice } from './deal-coach/actions'
 import { addClientNote } from './notes/actions'
 import { addQuickAction } from './quick-actions/actions'
-import { QUICK_ACTIONS, QUICK_ACTION_CATEGORIES } from '@/lib/scp/quick-actions'
 import { TaskCard } from '../../components/tasks/task-card'
 import { NewTaskForm } from '../../components/tasks/new-task-form'
 import { AIActionButton } from '../../components/ui/ai-action-button'
@@ -149,6 +148,14 @@ export default async function ClientDetailPage({
         .eq('status', 'pending')
         .order('due_date', { ascending: true, nullsFirst: false })
 
+    const { data: quickActions } = await supabase
+        .from('organization_quick_actions')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true)
+        .order('sort_order')
+
+    const safeQuickActions = quickActions ?? []
     const safeClientTasks = clientTasks ?? []
     const safeQuotes = quotes ?? []
     const safeActivities = activities ?? []
@@ -848,26 +855,19 @@ export default async function ClientDetailPage({
                 <form action={addQuickAction} className="mt-6 space-y-6">
                     <input type="hidden" name="clientId" value={client.id} />
 
-                    {QUICK_ACTION_CATEGORIES.map((category) => (
-                        <div key={category.key}>
-                            <p className="text-sm font-semibold uppercase tracking-wider text-neutral-500">
-                                {category.label}
-                            </p>
-                            <div className="mt-3 grid grid-cols-4 gap-3">
-                                {QUICK_ACTIONS.filter((action) => action.category === category.key).map((action) => (
-                                    <button
-                                        key={action.key}
-                                        type="submit"
-                                        name="actionType"
-                                        value={action.key}
-                                        className="rounded-lg border border-neutral-700 px-4 py-3 text-sm font-semibold text-white hover:bg-neutral-800"
-                                    >
-                                        {action.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
+                    <div className="grid grid-cols-4 gap-3">
+                        {safeQuickActions.map((action) => (
+                            <button
+                                key={action.id}
+                                type="submit"
+                                name="action_key"
+                                value={action.action_key}
+                                className="rounded-lg border border-neutral-700 px-4 py-3 text-sm font-semibold text-white hover:bg-neutral-800"
+                            >
+                                {action.emoji} {action.label}
+                            </button>
+                        ))}
+                    </div>
                 </form>
             </section>
 

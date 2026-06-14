@@ -2,11 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { getSupabaseServer } from '@/lib/supabase/server'
-import { QUICK_ACTIONS } from '@/lib/scp/quick-actions'
+import type { QuickActionType } from '@/lib/scp/quick-actions'
 import { isMemoryAutoSyncAction, buildMemoryAutoSyncPatch } from '@/lib/scp/memory-auto-sync'
 import { autoPopulateMemory } from '../memory/actions'
 import { getStageAutoSyncTarget, isTerminalStage } from '@/lib/scp/stage-auto-sync'
-import { getClientStageLabel } from '@/lib/scp/stages'
+import { getClientStageLabel, type ClientStage } from '@/lib/scp/stages'
 import { createAutoTask } from '@/lib/tasks/create-auto-task'
 import type { AutoTaskTrigger } from '@/lib/tasks/auto-tasks'
 
@@ -24,11 +24,9 @@ const QUICK_ACTION_TO_TRIGGER: Partial<Record<string, AutoTaskTrigger>> = {
 
 export async function addQuickAction(formData: FormData) {
     const clientId = formData.get('clientId') as string
-    const actionType = formData.get('actionType') as string
+    const actionKey = formData.get('action_key') as string
 
-    const action = QUICK_ACTIONS.find((item) => item.key === actionType)
-
-    if (!clientId || !action) {
+    if (!clientId || !actionKey) {
         throw new Error('Missing or invalid quick action')
     }
 
@@ -52,15 +50,26 @@ export async function addQuickAction(formData: FormData) {
         throw new Error('Organization not found')
     }
 
+    const { data: orgAction } = await supabase
+        .from('organization_quick_actions')
+        .select('*')
+        .eq('organization_id', profile.organization_id)
+        .eq('action_key', actionKey)
+        .maybeSingle()
+
+    if (!orgAction) {
+        throw new Error('Missing or invalid quick action')
+    }
+
     const { error: activityError } = await supabase
         .from('client_activities')
         .insert({
             organization_id: profile.organization_id,
             client_id: clientId,
             created_by: user.id,
-            type: action.key,
-            title: action.title,
-            description: action.description,
+            type: orgAction.action_key,
+            title: orgAction.label,
+            description: null,
             metadata: {
                 source: 'quick_action',
             },
@@ -71,7 +80,7 @@ export async function addQuickAction(formData: FormData) {
         throw activityError
     }
 
-    if (isMemoryAutoSyncAction(action.key)) {
+    if (isMemoryAutoSyncAction(actionKey as QuickActionType)) {
         const { data: memory } = await supabase
             .from('commercial_memory')
             .select('competitors')
@@ -80,7 +89,7 @@ export async function addQuickAction(formData: FormData) {
             .maybeSingle()
 
         const patch = buildMemoryAutoSyncPatch({
-            actionKey: action.key,
+            actionKey: actionKey as QuickActionType,
             currentMemory: memory,
         })
 
@@ -103,7 +112,7 @@ export async function addQuickAction(formData: FormData) {
         }
     }
 
-    const targetStage = getStageAutoSyncTarget(action.key)
+    const targetStage = (orgAction.scp_stage as ClientStage | null) ?? getStageAutoSyncTarget(actionKey as QuickActionType)
 
     if (targetStage) {
         const { data: clientRow } = await supabase
@@ -149,7 +158,7 @@ export async function addQuickAction(formData: FormData) {
                         to_label: toLabel,
                         changed_at: new Date().toISOString(),
                         source: 'quick_action_auto_sync',
-                        triggered_by_action: action.key,
+                        triggered_by_action: actionKey,
                     },
                 })
 
@@ -160,11 +169,11 @@ export async function addQuickAction(formData: FormData) {
         }
     }
 
-    if (actionType === 'budget_confirmed' || actionType === 'plans_received') {
+    if (actionKey === 'budget_confirmed' || actionKey === 'plans_received') {
         await autoPopulateMemory(clientId)
     }
 
-    const autoTrigger = QUICK_ACTION_TO_TRIGGER[actionType]
+    const autoTrigger = (orgAction.auto_task_trigger as AutoTaskTrigger | null) ?? QUICK_ACTION_TO_TRIGGER[actionKey]
 
     if (autoTrigger) {
         await createAutoTask({

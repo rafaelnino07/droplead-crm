@@ -308,6 +308,24 @@ export interface Task {
     updated_at: string
 }
 
+// ── Organization Quick Actions ───────────────────────────────────
+// Catálogo configurable de quick actions SCP por organización
+
+export interface OrganizationQuickAction {
+    id: string
+    organization_id: string
+    action_key: string
+    label: string
+    emoji: string
+    is_active: boolean
+    is_universal: boolean
+    scp_stage: string | null
+    auto_task_trigger: string | null
+    sort_order: number
+    is_custom: boolean
+    created_at: string
+}
+
 // ── Morning Brief ────────────────────────────────────────────────
 // CEO Morning Brief — resumen ejecutivo diario generado por IA
 
@@ -552,6 +570,12 @@ export type Database = {
                     branch_id?: string | null
                 }
                 Update: Partial<Omit<Task, 'id' | 'organization_id' | 'created_at'>>
+                Relationships: []
+            }
+            organization_quick_actions: {
+                Row: WithIndex<OrganizationQuickAction>
+                Insert: Omit<OrganizationQuickAction, 'id' | 'created_at'>
+                Update: Partial<Omit<OrganizationQuickAction, 'id' | 'organization_id' | 'created_at'>>
                 Relationships: []
             }
             meta_ad_accounts: {
