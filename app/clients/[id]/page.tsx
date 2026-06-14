@@ -21,6 +21,8 @@ import { generateExecutiveSummary } from './memory/actions'
 import { addClientNote } from './notes/actions'
 import { addQuickAction } from './quick-actions/actions'
 import { QUICK_ACTIONS, QUICK_ACTION_CATEGORIES } from '@/lib/scp/quick-actions'
+import { TaskCard } from '../../components/tasks/task-card'
+import { NewTaskForm } from '../../components/tasks/new-task-form'
 
 export default async function ClientDetailPage({
     params,
@@ -81,6 +83,16 @@ export default async function ClientDetailPage({
         .eq('client_id', client.id)
         .eq('organization_id', profile.organization_id)
         .order('created_at', { ascending: false })
+
+    const { data: clientTasks } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('client_id', client.id)
+        .eq('organization_id', profile.organization_id)
+        .eq('status', 'pending')
+        .order('due_date', { ascending: true, nullsFirst: false })
+
+    const safeClientTasks = clientTasks ?? []
     const safeQuotes = quotes ?? []
     const safeActivities = activities ?? []
 
@@ -618,6 +630,24 @@ export default async function ClientDetailPage({
                         </div>
                     ))}
                 </form>
+            </section>
+
+            <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-8">
+                <h2 className="text-2xl font-bold">Tareas</h2>
+
+                <div className="mt-6">
+                    <NewTaskForm clientId={client.id} />
+                </div>
+
+                {safeClientTasks.length === 0 ? (
+                    <p className="mt-6 text-neutral-400">No hay tareas pendientes. ¡Todo al día! 🎉</p>
+                ) : (
+                    <div className="mt-6 space-y-3">
+                        {safeClientTasks.map((task) => (
+                            <TaskCard key={task.id} task={task} clientName={client.name} />
+                        ))}
+                    </div>
+                )}
             </section>
 
             <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-8">

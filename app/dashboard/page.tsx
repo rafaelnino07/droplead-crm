@@ -4,6 +4,7 @@ import { getSupabaseServer } from '@/lib/supabase/server'
 import { calculateMoneyRadar } from '@/lib/scoring/money-radar'
 import { calculateNextBestAction, type NextBestActionResult } from '@/lib/scoring/next-best-action'
 import { getClientStageLabel, getClientStageProbability, type ClientStage } from '@/lib/scp/stages'
+import { formatTaskDueDate, isTaskOverdue } from '../components/tasks/constants'
 
 const OPEN_QUOTE_STATUSES = ['draft', 'sent', 'viewed']
 
@@ -80,6 +81,7 @@ export default async function DashboardPage() {
         { data: clientsData, error: clientsError },
         { data: quotesData, error: quotesError },
         { data: activitiesData, error: activitiesError },
+        { data: tasksData, error: tasksError },
     ] = await Promise.all([
         supabase.from('clients').select('id, name, stage').eq('organization_id', organizationId),
         supabase
@@ -92,11 +94,21 @@ export default async function DashboardPage() {
             .eq('organization_id', organizationId)
             .order('created_at', { ascending: false })
             .limit(100),
+        supabase
+            .from('tasks')
+            .select('id, title, priority, due_date, client_id')
+            .eq('organization_id', organizationId)
+            .eq('status', 'pending')
+            .order('due_date', { ascending: true, nullsFirst: false })
+            .limit(3),
     ])
 
     if (clientsError) console.error('DASHBOARD CLIENTS ERROR:', clientsError)
     if (quotesError) console.error('DASHBOARD QUOTES ERROR:', quotesError)
     if (activitiesError) console.error('DASHBOARD ACTIVITIES ERROR:', activitiesError)
+    if (tasksError) console.error('DASHBOARD TASKS ERROR:', tasksError)
+
+    const pendingTasks = tasksData ?? []
 
     const totalClients = clientsData?.length ?? 0
 
@@ -193,7 +205,8 @@ export default async function DashboardPage() {
         groupsByClient.set(activity.client_id, group)
     }
 
-    const clientIds = Array.from(groupsByClient.keys())
+    const taskClientIds = pendingTasks.filter((t) => t.client_id).map((t) => t.client_id as string)
+    const clientIds = Array.from(new Set([...groupsByClient.keys(), ...taskClientIds]))
 
     const { data: namedClients } =
         clientIds.length > 0
@@ -317,6 +330,45 @@ export default async function DashboardPage() {
                         </span>
                     </p>
                 </div>
+            </section>
+
+            <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-5">
+                <div className="flex items-center justify-between gap-4">
+                    <h2 className="text-lg font-semibold">Tareas pendientes</h2>
+                    <Link href="/tasks" className="text-sm text-neutral-400 transition-colors hover:text-white">
+                        Ver todas →
+                    </Link>
+                </div>
+
+                {pendingTasks.length === 0 ? (
+                    <p className="mt-4 text-sm text-neutral-400">Sin tareas pendientes.</p>
+                ) : (
+                    <div className="mt-4 space-y-3">
+                        {pendingTasks.map((task) => (
+                            <div key={task.id} className="flex items-center justify-between gap-4 rounded-lg bg-neutral-800 px-4 py-3">
+                                <div className="flex items-center gap-3">
+                                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${PRIORITY_CLASSES[task.priority]}`}>
+                                        {task.priority}
+                                    </span>
+                                    <div>
+                                        <p className="text-sm font-medium text-white">{task.title}</p>
+                                        {task.client_id && (
+                                            <p className="text-xs text-neutral-500">
+                                                {clientNameById.get(task.client_id) ?? 'Cliente'}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {task.due_date && (
+                                    <span className={`whitespace-nowrap text-xs ${isTaskOverdue(task.due_date) ? 'text-red-400' : 'text-neutral-500'}`}>
+                                        {formatTaskDueDate(task.due_date)}
+                                    </span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
             </section>
 
             <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-5">

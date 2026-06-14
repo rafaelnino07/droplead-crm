@@ -265,6 +265,24 @@ export interface ClientFile {
     created_at: string
 }
 
+// ── Task ─────────────────────────────────────────────────────────
+
+export interface Task {
+    id: string
+    organization_id: string
+    client_id: string | null
+    created_by: string | null
+    title: string
+    description: string | null
+    type: string
+    priority: 'Alta' | 'Media' | 'Baja'
+    status: 'pending' | 'done' | 'cancelled'
+    due_date: string | null
+    completed_at: string | null
+    created_at: string
+    updated_at: string
+}
+
 // ═══════════════════════════════════════════════════════════════
 // JOINED / ENRICHED TYPES
 // Used in queries that join multiple tables
@@ -445,6 +463,12 @@ export type Database = {
                 Row: WithIndex<ClientFile>
                 Insert: Omit<ClientFile, 'id' | 'created_at'>
                 Update: Partial<Omit<ClientFile, 'id' | 'organization_id' | 'client_id' | 'created_at'>>
+                Relationships: []
+            }
+            tasks: {
+                Row: WithIndex<Task>
+                Insert: Omit<Task, 'id' | 'created_at' | 'updated_at'>
+                Update: Partial<Omit<Task, 'id' | 'organization_id' | 'created_at'>>
                 Relationships: []
             }
             meta_ad_accounts: {
