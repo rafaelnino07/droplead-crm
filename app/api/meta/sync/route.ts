@@ -206,8 +206,6 @@ async function syncAds({
         }
     )
 
-    console.log('SAMPLE AD DEBUG:', JSON.stringify(adsResponse.data?.[0], null, 2))
-
     for (const ad of adsResponse.data ?? []) {
         const videoUrl = ad.creative?.video_id
             ? await getVideoSourceUrl(ad.creative.video_id, accessToken)
