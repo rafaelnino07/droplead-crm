@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getSupabaseServer, getActiveOrganizationId } from "@/lib/supabase/server";
+import { ImpersonationBanner } from "../components/admin/impersonation-banner";
 import { MarketingChart } from "./marketing-chart";
 
 const STATUS_LABELS: Record<string, { label: string; classes: string }> = {
@@ -216,6 +217,8 @@ Ads: ${data.ads}`
     }
   }
   return (
+    <>
+    <ImpersonationBanner />
     <div className="p-8 space-y-8 max-w-[1400px]">
       <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
@@ -331,5 +334,6 @@ Ads: ${data.ads}`
         </table>
       </div>
     </div>
+    </>
   );
 }

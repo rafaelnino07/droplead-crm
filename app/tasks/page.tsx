@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
+import { ImpersonationBanner } from '../components/admin/impersonation-banner'
 import { NewTaskForm } from '../components/tasks/new-task-form'
 import { TaskCard } from '../components/tasks/task-card'
 import type { Task } from '@/lib/types/database'
@@ -53,6 +54,8 @@ export default async function TasksPage() {
     }))
 
     return (
+        <>
+        <ImpersonationBanner />
         <main className="min-h-screen bg-neutral-950 p-8 text-white">
             <div className="flex items-center justify-between gap-4">
                 <div>
@@ -95,5 +98,6 @@ export default async function TasksPage() {
                 )}
             </div>
         </main>
+        </>
     )
 }

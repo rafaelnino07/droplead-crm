@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
+import { ImpersonationBanner } from '../components/admin/impersonation-banner'
 import { getClientStageLabel, getClientStageProbability } from '@/lib/scp/stages'
 import { BranchFilter } from '@/components/branches/branch-filter'
 
@@ -59,6 +60,8 @@ export default async function ClientsPage({
     }
 
     return (
+        <>
+        <ImpersonationBanner />
         <main className="min-h-screen bg-neutral-950 p-8 text-white">
             <div className="flex items-center justify-between">
                 <div>
@@ -142,5 +145,6 @@ export default async function ClientsPage({
                 )}
             </section>
         </main>
+        </>
     )
 }

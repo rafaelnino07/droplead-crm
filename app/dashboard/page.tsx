@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
+import { ImpersonationBanner } from '../components/admin/impersonation-banner'
 import { calculateMoneyRadar } from '@/lib/scoring/money-radar'
 import { calculateNextBestAction, type NextBestActionResult } from '@/lib/scoring/next-best-action'
 import { detectMoneyLeaks, type MoneyLeak } from '@/lib/ai/money-leak-detector'
@@ -327,6 +328,8 @@ export default async function DashboardPage({
     ]
 
     return (
+        <>
+        <ImpersonationBanner />
         <main className="min-h-screen bg-neutral-950 p-8 text-white">
             <div className="flex items-start justify-between gap-4">
                 <div>
@@ -600,5 +603,6 @@ export default async function DashboardPage({
                 )}
             </section>
         </main>
+        </>
     )
 }

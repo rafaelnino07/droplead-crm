@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
+import { ImpersonationBanner } from '../components/admin/impersonation-banner'
 import { buildPipeline } from '@/lib/scp/pipeline'
 
 export default async function PipelinePage() {
@@ -40,6 +41,8 @@ export default async function PipelinePage() {
     const pipeline = buildPipeline(clients ?? [])
 
     return (
+        <>
+        <ImpersonationBanner />
         <main className="min-h-screen bg-black p-8 text-white">
             <div className="flex items-center justify-between">
                 <div>
@@ -125,5 +128,6 @@ export default async function PipelinePage() {
                 </div>
             </section>
         </main>
+        </>
     )
 }

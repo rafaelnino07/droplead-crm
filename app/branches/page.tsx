@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
+import { ImpersonationBanner } from '../components/admin/impersonation-banner'
 import { createBranch, toggleBranchActive } from './actions'
 
 const OPEN_QUOTE_STATUSES = ['draft', 'sent', 'viewed']
@@ -59,6 +60,8 @@ export default async function BranchesPage() {
     }
 
     return (
+        <>
+        <ImpersonationBanner />
         <main className="min-h-screen bg-neutral-950 p-8 text-white">
             <div className="flex items-start justify-between">
                 <div>
@@ -179,5 +182,6 @@ export default async function BranchesPage() {
                 )}
             </section>
         </main>
+        </>
     )
 }

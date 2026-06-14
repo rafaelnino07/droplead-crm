@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getSupabaseServer, getActiveOrganizationId } from '@/lib/supabase/server'
+import { ImpersonationBanner } from '../components/admin/impersonation-banner'
 import { NewProductForm } from '../components/products/new-product-form'
 import { archiveProduct } from '@/lib/products/actions'
 
@@ -55,6 +56,8 @@ export default async function ProductsPage() {
     }, null)
 
     return (
+        <>
+        <ImpersonationBanner />
         <main className="min-h-screen bg-neutral-950 p-8 text-white">
             <div className="flex items-start justify-between">
                 <div>
@@ -147,5 +150,6 @@ export default async function ProductsPage() {
                 )}
             </section>
         </main>
+        </>
     )
 }
