@@ -3,6 +3,7 @@ import { CheckCircle2 } from "lucide-react";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { saveMetaAdAccount } from "./actions";
 import { SyncButton, CopyButton } from "./settings-client";
+import { TokenInput } from "./token-input";
 
 export default async function SettingsPage() {
   const supabase = await getSupabaseServer();
@@ -80,12 +81,7 @@ export default async function SettingsPage() {
           </Field>
 
           <Field label="Token de acceso">
-            <input
-              type="password"
-              name="access_token"
-              defaultValue={account?.access_token_encrypted ?? ""}
-              className="w-full h-10 rounded-lg bg-secondary/50 border border-border/60 px-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring/40"
-            />
+            <TokenInput defaultValue={account?.access_token_encrypted ?? ""} />
             <p className="text-[11px] text-muted-foreground mt-1.5">
               Genéralo desde Meta Business → Usuarios del Sistema → Generar token.
             </p>

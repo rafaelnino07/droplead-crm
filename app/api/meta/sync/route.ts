@@ -38,7 +38,6 @@ type GraphAdCreative = {
     image_url?: string
     video_id?: string
     call_to_action_type?: string
-    permalink_url?: string
 }
 
 type GraphAd = {
@@ -46,6 +45,7 @@ type GraphAd = {
     name?: string
     status?: string
     permalink_url?: string
+    effective_object_story_id?: string
     creative?: GraphAdCreative
 }
 
@@ -201,15 +201,23 @@ async function syncAds({
         `/${metaAdSetId}/ads`,
         accessToken,
         {
-            fields: 'id,name,status,permalink_url,creative{title,body,image_url,video_id,call_to_action_type,permalink_url}',
+            fields: 'id,name,status,permalink_url,effective_object_story_id,creative{title,body,image_url,video_id,call_to_action_type}',
             limit: '100',
         }
     )
+
+    console.log('SAMPLE AD DEBUG:', JSON.stringify(adsResponse.data?.[0], null, 2))
 
     for (const ad of adsResponse.data ?? []) {
         const videoUrl = ad.creative?.video_id
             ? await getVideoSourceUrl(ad.creative.video_id, accessToken)
             : null
+
+        const permalink =
+            ad.permalink_url ??
+            (ad.effective_object_story_id
+                ? `https://www.facebook.com/${ad.effective_object_story_id}`
+                : null)
 
         const { data: adRow, error: adError } = await supabase
             .from('meta_ads')
@@ -225,7 +233,7 @@ async function syncAds({
                     image_url: ad.creative?.image_url ?? null,
                     video_url: videoUrl,
                     cta_type: ad.creative?.call_to_action_type ?? null,
-                    permalink_url: ad.creative?.permalink_url ?? ad.permalink_url ?? null,
+                    permalink_url: permalink,
                 },
                 { onConflict: 'meta_ad_id' }
             )
