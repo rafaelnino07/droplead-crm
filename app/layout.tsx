@@ -2,6 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { Sidebar } from "@/components/layout/sidebar";
+import CopilotWidget from "./components/revenue-copilot/copilot-widget";
 
 const geist = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -22,6 +23,7 @@ export default function RootLayout({
           <Sidebar />
           <div className="flex-1 min-w-0">{children}</div>
         </div>
+        <CopilotWidget />
       </body>
     </html>
   );
