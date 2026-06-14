@@ -26,8 +26,20 @@ import { NewTaskForm } from '../../components/tasks/new-task-form'
 import { AIActionButton } from '../../components/ui/ai-action-button'
 import { ScoreBar } from '../../components/ui/score-bar'
 import { cn } from '@/lib/utils'
+import { HelpCircle } from 'lucide-react'
 
 const DEAL_COACH_BLOCK_LABELS = ['Situación', 'Riesgo', 'Acción exacta']
+
+function TooltipIcon({ text }: { text: string }) {
+    return (
+        <div className="relative group inline-flex items-center">
+            <HelpCircle size={14} className="text-neutral-500 cursor-help" />
+            <div className="absolute bottom-full left-0 mb-2 w-72 invisible z-50 rounded-lg border border-neutral-700 bg-neutral-800 p-3 text-xs leading-relaxed text-neutral-300 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100">
+                {text}
+            </div>
+        </div>
+    )
+}
 
 export default async function ClientDetailPage({
     params,
@@ -282,8 +294,9 @@ export default async function ClientDetailPage({
                                 </span>
                             )}
 
-                            <span className="text-neutral-400">
+                            <span className="flex items-center gap-2 text-neutral-400">
                                 Progreso comercial: {pipelineProgress.percentage}%
+                                <TooltipIcon text="¿En qué paso del proceso de venta está este cliente? Va de Nuevo Lead (5%) hasta Proyecto Cerrado (100%). Cada etapa representa qué tan cerca estás de cerrar." />
                             </span>
 
                             <Link
@@ -377,7 +390,10 @@ export default async function ClientDetailPage({
             )}
 
             <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-8">
-                <p className="text-neutral-500">Momentum Comercial</p>
+                <div className="flex items-center gap-2">
+                    <p className="text-neutral-500">Momentum Comercial</p>
+                    <TooltipIcon text="¿Qué tan viva está esta oportunidad? Si has tenido contacto reciente y hay señales de interés, el momentum sube. Si llevas días sin hablar con el cliente, baja." />
+                </div>
                 <div className="mt-4 max-w-md">
                     <ScoreBar score={momentum.score} />
                 </div>
@@ -393,7 +409,10 @@ export default async function ClientDetailPage({
             </section>
 
             <section className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-8">
-                <p className="text-neutral-500">SCP Health Score</p>
+                <div className="flex items-center gap-2">
+                    <p className="text-neutral-500">Salud del SCP</p>
+                    <TooltipIcon text="¿Qué tan bien conoces a este prospecto? Sube cuando tienes su teléfono, presupuesto, cotización enviada y actividad registrada. Baja cuando falta información clave para poder cerrar." />
+                </div>
                 <div className="mt-4 max-w-md">
                     <ScoreBar score={scpHealth.score} />
                 </div>
