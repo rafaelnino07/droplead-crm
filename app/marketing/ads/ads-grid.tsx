@@ -9,6 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { AdCard } from "../../components/marketing/ad-card";
 
 export type Perf = "TOP" | "GOOD" | "AVG" | "LOW";
 
@@ -21,6 +22,8 @@ export type Ad = {
   status: string;
   perf: Perf;
   image: string;
+  video: string;
+  permalinkUrl: string | null;
   impressions: string;
   reach: string;
   clicks: string;
@@ -39,13 +42,6 @@ const perfStyle: Record<Perf, string> = {
 };
 
 const filters = ["Todos", "TOP", "GOOD", "AVG", "LOW"] as const;
-
-function AdThumbnail({ src, alt, className }: { src: string; alt: string; className: string }) {
-  if (!src) {
-    return <div className={cn(className, "bg-gradient-to-br from-indigo-500/30 to-violet-600/20")} />;
-  }
-  return <img src={src} alt={alt} loading="lazy" className={className} />;
-}
 
 export function AdsGrid({ ads }: { ads: Ad[] }) {
   const [selected, setSelected] = useState<Ad | null>(null);
@@ -91,9 +87,12 @@ export function AdsGrid({ ads }: { ads: Ad[] }) {
               ad.span,
             )}
           >
-            <AdThumbnail
-              src={ad.image}
-              alt={ad.headline}
+            <AdCard
+              name={ad.name}
+              headline={ad.headline}
+              imageUrl={ad.image}
+              videoUrl={ad.video}
+              permalinkUrl={ad.permalinkUrl}
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/40" />
@@ -112,6 +111,17 @@ export function AdsGrid({ ads }: { ads: Ad[] }) {
             <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
               <h3 className="text-sm font-semibold leading-snug text-white line-clamp-2">{ad.headline}</h3>
               <p className="text-xs text-white/70 mt-1 line-clamp-2">{ad.copy}</p>
+              {ad.permalinkUrl && (
+                <a
+                  href={ad.permalinkUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-indigo-300 hover:text-indigo-200"
+                >
+                  Ver en Meta →
+                </a>
+              )}
             </div>
 
             {/* Hover overlay metrics */}
@@ -163,7 +173,14 @@ function AdDetailDialog({ ad, onClose }: { ad: Ad | null; onClose: () => void })
 
             {/* Image */}
             <div className="relative h-72 sm:h-80 w-full overflow-hidden">
-              <AdThumbnail src={ad.image} alt={ad.headline} className="absolute inset-0 w-full h-full object-cover" />
+              <AdCard
+                name={ad.name}
+                headline={ad.headline}
+                imageUrl={ad.image}
+                videoUrl={ad.video}
+                permalinkUrl={ad.permalinkUrl}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
               <div className="absolute top-4 left-4 right-12 flex items-center justify-between">
                 <span className="text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-md bg-black/50 backdrop-blur text-white border border-white/10">

@@ -70,7 +70,7 @@ export default async function AdsPage() {
 
   const { data: adsData, error: adsError } = await supabase
     .from("meta_ads")
-    .select("id, meta_ad_id, name, status, headline, body, image_url, cta_type")
+    .select("id, meta_ad_id, name, status, headline, body, image_url, video_url, permalink_url, cta_type")
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
 
@@ -136,6 +136,8 @@ export default async function AdsPage() {
       status: statusLabel(ad.status),
       perf: classifyPerf(ctr),
       image: ad.image_url ?? "",
+      video: ad.video_url ?? "",
+      permalinkUrl: ad.permalink_url ?? null,
       impressions: agg.impressions.toLocaleString("es-MX"),
       reach: agg.reach.toLocaleString("es-MX"),
       clicks: agg.clicks.toLocaleString("es-MX"),
