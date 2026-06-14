@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
+import { Pencil } from 'lucide-react'
 
 type Message = {
     role: 'user' | 'assistant'
@@ -9,15 +10,29 @@ type Message = {
 
 const SUGGESTED_QUESTIONS = ['¿Qué debo cerrar hoy?', '¿Cuánto tengo en riesgo?', '¿Cuál es mi mejor oportunidad?']
 
+function escapeHtml(text: string): string {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+function formatMessage(text: string): string {
+    return escapeHtml(text)
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*\*/g, '')
+        .replace(/^(—|--?)\s*/gm, '')
+}
+
 export default function CopilotWidget() {
     const [isOpen, setIsOpen] = useState(false)
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
-    const [assistantName, setAssistantName] = useState<string>(() =>
-        typeof window !== 'undefined' ? localStorage.getItem('assistant_name') || '' : ''
-    )
+    const [assistantName, setAssistantName] = useState<string>('')
     const [isNaming, setIsNaming] = useState(false)
+
+    useEffect(() => {
+        const saved = localStorage.getItem('assistant_name')
+        if (saved) setAssistantName(saved)
+    }, [])
 
     async function sendQuestion(question: string) {
         const trimmed = question.trim()
@@ -89,12 +104,8 @@ export default function CopilotWidget() {
                     ) : (
                         <p className="font-semibold text-white">🤖 Asistente Comercial</p>
                     )}
-                    <button
-                        type="button"
-                        onClick={() => setIsNaming((prev) => !prev)}
-                        className="text-neutral-400 transition-colors hover:text-white"
-                    >
-                        ✏️
+                    <button type="button" onClick={() => setIsNaming((prev) => !prev)}>
+                        <Pencil size={12} className="text-neutral-500 transition-colors hover:text-white" />
                     </button>
                 </div>
                 <button
@@ -147,13 +158,16 @@ export default function CopilotWidget() {
                 ) : (
                     messages.map((message, index) => (
                         <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <p
-                                className={`max-w-[85%] whitespace-pre-wrap rounded-xl px-3 py-2 text-sm ${
-                                    message.role === 'user' ? 'bg-violet-600 text-white' : 'bg-neutral-800 text-neutral-200'
-                                }`}
-                            >
-                                {message.text}
-                            </p>
+                            {message.role === 'user' ? (
+                                <p className="max-w-[85%] whitespace-pre-wrap rounded-xl bg-violet-600 px-3 py-2 text-sm text-white">
+                                    {message.text}
+                                </p>
+                            ) : (
+                                <p
+                                    className="max-w-[85%] whitespace-pre-wrap rounded-xl bg-neutral-800 px-3 py-2 text-sm text-neutral-200"
+                                    dangerouslySetInnerHTML={{ __html: formatMessage(message.text) }}
+                                />
+                            )}
                         </div>
                     ))
                 )}

@@ -23,6 +23,14 @@ const STATUS_PILL_CLASSES: Record<QuoteStatus, string> = {
     expired: 'bg-neutral-800 text-neutral-400 border border-neutral-700',
 }
 
+function formatCurrency(amount: number, currency: string): string {
+    return new Intl.NumberFormat('es-MX', {
+        style: 'currency',
+        currency: currency || 'MXN',
+        maximumFractionDigits: 0,
+    }).format(amount)
+}
+
 export default async function QuoteDetailPage({
     params,
 }: {
@@ -149,7 +157,7 @@ export default async function QuoteDetailPage({
                     <div>
                         <p className="text-sm text-neutral-500">Total</p>
                         <p className="mt-1 text-2xl font-bold">
-                            ${Number(quote.total ?? 0).toLocaleString('es-MX')}
+                            {formatCurrency(Number(quote.total ?? 0), quote.currency)}
                         </p>
                     </div>
 
@@ -251,14 +259,14 @@ export default async function QuoteDetailPage({
                     <div className="mt-4 space-y-2 text-sm">
                         <div className="flex justify-between">
                             <span className="text-neutral-400">Subtotal</span>
-                            <span className="tabular-nums">${Number(quote.subtotal).toLocaleString('es-MX')}</span>
+                            <span className="tabular-nums">{formatCurrency(Number(quote.subtotal), quote.currency)}</span>
                         </div>
 
                         {(quote.discount_global > 0 || quote.discount_amount > 0) && (
                             <div className="flex justify-between">
                                 <span className="text-neutral-400">Descuento ({quote.discount_global}%)</span>
                                 <span className="tabular-nums text-red-400">
-                                    -${Number(quote.discount_amount).toLocaleString('es-MX')}
+                                    -{formatCurrency(Number(quote.discount_amount), quote.currency)}
                                 </span>
                             </div>
                         )}
@@ -266,14 +274,19 @@ export default async function QuoteDetailPage({
                         {quote.tax_rate > 0 && (
                             <div className="flex justify-between">
                                 <span className="text-neutral-400">IVA ({quote.tax_rate}%)</span>
-                                <span className="tabular-nums">${Number(quote.tax_amount).toLocaleString('es-MX')}</span>
+                                <span className="tabular-nums">{formatCurrency(Number(quote.tax_amount), quote.currency)}</span>
                             </div>
                         )}
                     </div>
 
                     <div className="mt-4 flex items-center justify-between border-t border-neutral-800 pt-4">
                         <span className="text-base font-semibold">Total</span>
-                        <span className="text-2xl font-bold">${Number(quote.total).toLocaleString('es-MX')}</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-2xl font-bold">{formatCurrency(Number(quote.total), quote.currency)}</span>
+                            <span className="rounded-full border border-neutral-700 px-2 py-0.5 text-xs text-neutral-400">
+                                {quote.currency}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </section>

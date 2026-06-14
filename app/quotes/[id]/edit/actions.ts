@@ -85,6 +85,7 @@ export async function updateQuoteMeta(formData: FormData) {
     const validUntil = String(formData.get('valid_until') ?? '').trim()
     const taxRate = Number(formData.get('tax_rate') || 0)
     const discountGlobal = Number(formData.get('discount_global') || 0)
+    const currency = String(formData.get('currency') || 'MXN').trim()
 
     const { error } = await supabase
         .from('quotes')
@@ -97,6 +98,7 @@ export async function updateQuoteMeta(formData: FormData) {
             valid_until: validUntil || null,
             tax_rate: taxRate,
             discount_global: discountGlobal,
+            currency,
             updated_at: new Date().toISOString(),
         })
         .eq('id', quoteId)

@@ -117,7 +117,7 @@ export default async function EditQuotePage({
                     className="min-h-28 w-full rounded bg-neutral-800 px-4 py-3 outline-none"
                 />
 
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-4">
                     <div>
                         <label className="mb-1 block text-xs text-neutral-500">Válida hasta</label>
                         <input
@@ -153,11 +153,34 @@ export default async function EditQuotePage({
                             className="w-full rounded bg-neutral-800 px-4 py-3 outline-none"
                         />
                     </div>
+
+                    <div>
+                        <label className="mb-1 block text-xs text-neutral-500">Moneda</label>
+                        <select
+                            name="currency"
+                            defaultValue={quote.currency || 'MXN'}
+                            className="w-full rounded bg-neutral-800 px-4 py-3 outline-none"
+                        >
+                            <option value="MXN">MXN (Peso mexicano)</option>
+                            <option value="USD">USD (Dólar americano)</option>
+                            <option value="EUR">EUR (Euro)</option>
+                        </select>
+                    </div>
                 </div>
 
-                <button className="rounded bg-white px-4 py-3 font-semibold text-black">
-                    {isNewQuote ? 'Guardar cotización' : 'Guardar cambios'}
-                </button>
+                <div className="flex gap-3">
+                    <button className="rounded bg-white px-4 py-3 font-semibold text-black">
+                        {isNewQuote ? 'Guardar cotización' : 'Guardar cambios'}
+                    </button>
+
+                    <Link
+                        href={`/quotes/${quote.id}/print`}
+                        target="_blank"
+                        className="rounded-lg border border-neutral-700 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
+                    >
+                        Previsualizar PDF →
+                    </Link>
+                </div>
             </form>
 
             {/* SECTION 2 — line items */}

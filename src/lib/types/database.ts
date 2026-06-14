@@ -147,6 +147,7 @@ export interface Quote {
     client_vision: string | null
 
     // Financials
+    currency: string
     subtotal: number
     discount_global: number
     discount_amount: number

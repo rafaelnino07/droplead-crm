@@ -11,6 +11,22 @@ import { getSupabaseServer } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { PrintButton } from './print-button-client'
 
+function formatCurrency(amount: number, currency: string): string {
+    const formatted = new Intl.NumberFormat('es-MX', {
+        maximumFractionDigits: 0,
+        minimumFractionDigits: 0,
+    }).format(amount)
+
+    const code = (currency || 'MXN').toUpperCase()
+
+    switch (code) {
+        case 'MXN': return `$${formatted} MXN`
+        case 'USD': return `$${formatted} USD`
+        case 'EUR': return `€${formatted} EUR`
+        default: return `${code} ${formatted}`
+    }
+}
+
 export default async function PrintQuotePage({
     params,
 }: {
@@ -189,13 +205,13 @@ export default async function PrintQuotePage({
                                         <td className="border border-neutral-300 px-3 py-2 text-right tabular-nums">{item.quantity}</td>
                                         <td className="border border-neutral-300 px-3 py-2">{item.unit}</td>
                                         <td className="border border-neutral-300 px-3 py-2 text-right tabular-nums">
-                                            ${Number(item.unit_price).toLocaleString('es-MX')}
+                                            {formatCurrency(Number(item.unit_price), quote.currency)}
                                         </td>
                                         <td className="border border-neutral-300 px-3 py-2 text-right tabular-nums">
                                             {item.discount_pct > 0 ? `${item.discount_pct}%` : '—'}
                                         </td>
                                         <td className="border border-neutral-300 px-3 py-2 text-right font-medium tabular-nums">
-                                            ${Number(item.subtotal).toLocaleString('es-MX')}
+                                            {formatCurrency(Number(item.subtotal), quote.currency)}
                                         </td>
                                     </tr>
                                 ))}
@@ -210,14 +226,14 @@ export default async function PrintQuotePage({
                         <div className="space-y-1 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-neutral-500">Subtotal</span>
-                                <span className="tabular-nums">${Number(quote.subtotal).toLocaleString('es-MX')}</span>
+                                <span className="tabular-nums">{formatCurrency(Number(quote.subtotal), quote.currency)}</span>
                             </div>
 
                             {(quote.discount_global > 0 || quote.discount_amount > 0) && (
                                 <div className="flex justify-between">
                                     <span className="text-neutral-500">Descuento ({quote.discount_global}%)</span>
                                     <span className="tabular-nums">
-                                        -${Number(quote.discount_amount).toLocaleString('es-MX')}
+                                        -{formatCurrency(Number(quote.discount_amount), quote.currency)}
                                     </span>
                                 </div>
                             )}
@@ -225,14 +241,14 @@ export default async function PrintQuotePage({
                             {quote.tax_rate > 0 && (
                                 <div className="flex justify-between">
                                     <span className="text-neutral-500">IVA ({quote.tax_rate}%)</span>
-                                    <span className="tabular-nums">${Number(quote.tax_amount).toLocaleString('es-MX')}</span>
+                                    <span className="tabular-nums">{formatCurrency(Number(quote.tax_amount), quote.currency)}</span>
                                 </div>
                             )}
                         </div>
 
                         <div className="mt-2 flex items-center justify-between border-t border-neutral-300 pt-2">
                             <span className="text-base font-semibold">Total</span>
-                            <span className="text-2xl font-bold">${Number(quote.total).toLocaleString('es-MX')}</span>
+                            <span className="text-2xl font-bold">{formatCurrency(Number(quote.total), quote.currency)}</span>
                         </div>
                     </div>
                 </section>
